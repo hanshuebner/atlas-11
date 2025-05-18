@@ -2,14 +2,16 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory>
+#include <sstream>
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
 #include "console.hpp"
 #include "dcj11_gpio.h"
+#include "bus_monitor.h"
+#include "fs.h"
 
-// Command handler function type
-using cmd_handler_t = void(*)();
+// Command handler function type with parameters
+using cmd_handler_t = void(*)(const std::vector<std::string>&);
 
 // Command structure
 struct cmd_entry {
@@ -19,40 +21,42 @@ struct cmd_entry {
 };
 
 // Command handlers
-static void cmd_on() {
+static void cmd_on(const std::vector<std::string>& args) {
     gpio_put(DCJ11_POWER_CTL, 1);
     printf("DJC11 SBC powered on\n");
 }
 
-static void cmd_off() {
+static void cmd_off(const std::vector<std::string>& args) {
     gpio_put(DCJ11_POWER_CTL, 0);
     printf("DJC11 SBC powered off\n");
 }
 
-static void cmd_halt() {
+static void cmd_halt(const std::vector<std::string>& args) {
     gpio_put(DCJ11_HALT, 1);
     sleep_ms(10);  // Hold HALT high for 10ms
     gpio_put(DCJ11_HALT, 0);
     printf("HALT signal asserted for 10ms\n");
 }
 
-static void cmd_help();
+static void cmd_help(const std::vector<std::string>& args);
 
-static void cmd_update() {
+static void cmd_update(const std::vector<std::string>& args) {
     printf("Rebooting into firmware update mode...\n");
     sleep_ms(100);  // Give time for message to be printed
     reset_usb_boot(0, 0);  // Reboot into USB bootloader
 }
 
-static void cmd_console() {
-    cmd_on();
+static void cmd_console(const std::vector<std::string>& args) {
+    cmd_on(args);
     console_mode();
 }
 
 // Command table
 static const std::vector<cmd_entry> cmd_table = {
+    {"bus", cmd_bus, "Monitor bus transitions (e.g. 'bus 20' for 20 captures, default 10)"},
     {"console", cmd_console, "Enter UART console mode (38400 8N1) (powers on, too)"},
     {"halt", cmd_halt, "Assert HALT signal for 10ms"},
+    {"ls", cmd_ls, "List files on SD card"},
     {"on", cmd_on, "Power on the DJC11 SBC"},
     {"off", cmd_off, "Power off the DJC11 SBC"},
     {"update", cmd_update, "Reboot into firmware update mode"},
@@ -92,7 +96,7 @@ static void init_cmd_map() {
     }
 }
 
-void cmd_help() {
+void cmd_help(const std::vector<std::string>& args) {
     printf("\nAtlas-11 GPIO Control Interface\n");
     printf("Commands:\n");
 
@@ -100,6 +104,19 @@ void cmd_help() {
     for (const auto& cmd : cmd_table) {
         printf("  %-8s - %s\n", cmd.name.c_str(), cmd.usage.c_str());
     }
+}
+
+// Split string into vector of strings
+static std::vector<std::string> split_string(const std::string& str) {
+    std::vector<std::string> result;
+    std::istringstream iss(str);
+    std::string token;
+
+    while (iss >> token) {
+        result.push_back(token);
+    }
+
+    return result;
 }
 
 // Read a line of input with basic line editing capabilities
@@ -136,10 +153,7 @@ bool read_line(std::string& buffer) {
     }
 }
 
-int main() {
-    // Initialize stdio
-    stdio_init_all();
-
+void init_gpio() {
     // Initialize GPIO
     gpio_init(DCJ11_POWER_CTL);
     gpio_set_dir(DCJ11_POWER_CTL, GPIO_OUT);
@@ -149,6 +163,33 @@ int main() {
     gpio_set_dir(DCJ11_HALT, GPIO_OUT);
     gpio_put(DCJ11_HALT, 0);  // Start with HALT low
 
+    // Initialize Data Address Lines (DAL0-15) as inputs
+    for (int pin = DCJ11_DAL0; pin <= DCJ11_DAL15; pin++) {
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_IN);
+    }
+
+    // Initialize control signals as inputs
+    const int control_pins[] = {
+        DCJ11_INIT, DCJ11_LE, DCJ11_LBS0, DCJ11_LBS1,
+        DCJ11_nWEU, DCJ11_nWEL, DCJ11_nOE, DCJ11_nSCTL,
+        DCJ11_nCONT
+    };
+
+    for (int pin : control_pins) {
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_IN);
+    }
+
+    return;
+}
+
+int main() {
+    // Initialize stdio
+    stdio_init_all();
+
+    init_gpio();
+
     // Initialize command map
     init_cmd_map();
 
@@ -156,20 +197,24 @@ int main() {
     sleep_ms(1000);
 
     printf("Atlas-11 Firmware Starting...\n");
-    cmd_help();
+    cmd_help({});
 
     std::string cmd;
 
     while (true) {
         if (!read_line(cmd)) {
-            cmd_help();
+            cmd_help({});
             continue;
         }
 
+        // Split command into words
+        std::vector<std::string> args = split_string(cmd);
+        if (args.empty()) continue;
+
         // Look up command in map
-        auto it = cmd_map.find(cmd);
+        auto it = cmd_map.find(args[0]);
         if (it != cmd_map.end()) {
-            it->second->handler();
+            it->second->handler(args);
         } else {
             printf("Unknown command. Type 'help' for available commands.\n");
         }

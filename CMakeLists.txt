@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 # Set platform and board for PGA2350
 set(PICO_PLATFORM "rp2350")
-set(PICO_BOARD "pga2350")
+set(PICO_BOARD "pimoroni_pga2350")
 
 # Add board search directories
 list(APPEND PICO_BOARD_HEADER_DIRS "${PIMORONI_PICO_PATH}/pga2350")
@@ -21,8 +21,10 @@ pico_sdk_init()
 
 # Add source files
 set(SOURCES
-    main.cpp
-    console.cpp
+        main.cpp
+        console.cpp
+        bus_monitor.cpp
+        fs.cpp
 )
 
 add_executable(atlas-11 ${SOURCES})
@@ -30,12 +32,14 @@ add_executable(atlas-11 ${SOURCES})
 # Add include directories
 target_include_directories(atlas-11 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(${PICO_FATFS_PATH} pico_fats)
+
 # Enable USB output, disable UART output
 pico_enable_stdio_usb(atlas-11 1)
 pico_enable_stdio_uart(atlas-11 0)
 
 # Add the standard library to the build
-target_link_libraries(atlas-11 pico_stdlib)
+target_link_libraries(atlas-11 pico_stdlib pico_fatfs)
 
 # Create map/bin/hex/uf2 file in addition to ELF.
-pico_add_extra_outputs(atlas-11) 
+pico_add_extra_outputs(atlas-11)

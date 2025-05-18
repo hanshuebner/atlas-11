@@ -101,3 +101,7 @@ This is the firmware for the Atlas-11 project running on an RP2350 board (PGA235
 | GPIO 28  | /SCTL | System Control |
 | GPIO 29  | /CONT | Continue signal |
 | GPIO 30  | HALT | Halt signal |
+| GPIO 43 | SPI1_TX | SDCARD MOSI |
+| GPIO 44 | SPI1_RX | SDCARD MISO |
+| GPIO 45 | SPI1_CSn | SDCARD CS |
+| GPIO 46 | SPI1_SCK | SDCARD SCK |
