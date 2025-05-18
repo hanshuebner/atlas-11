@@ -6,8 +6,7 @@
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
 #include "console.hpp"
-
-#define GPIO_PIN 2
+#include "dcj11_gpio.h"
 
 // Command handler function type
 using cmd_handler_t = void(*)();
@@ -21,13 +20,20 @@ struct cmd_entry {
 
 // Command handlers
 static void cmd_on() {
-    gpio_put(GPIO_PIN, 1);
+    gpio_put(DCJ11_POWER_CTL, 1);
     printf("DJC11 SBC powered on\n");
 }
 
 static void cmd_off() {
-    gpio_put(GPIO_PIN, 0);
+    gpio_put(DCJ11_POWER_CTL, 0);
     printf("DJC11 SBC powered off\n");
+}
+
+static void cmd_halt() {
+    gpio_put(DCJ11_HALT, 1);
+    sleep_ms(10);  // Hold HALT high for 10ms
+    gpio_put(DCJ11_HALT, 0);
+    printf("HALT signal asserted for 10ms\n");
 }
 
 static void cmd_help();
@@ -39,16 +45,18 @@ static void cmd_update() {
 }
 
 static void cmd_console() {
+    cmd_on();
     console_mode();
 }
 
 // Command table
 static const std::vector<cmd_entry> cmd_table = {
+    {"console", cmd_console, "Enter UART console mode (38400 8N1) (powers on, too)"},
+    {"halt", cmd_halt, "Assert HALT signal for 10ms"},
     {"on", cmd_on, "Power on the DJC11 SBC"},
     {"off", cmd_off, "Power off the DJC11 SBC"},
-    {"help", cmd_help, "Show help message"},
     {"update", cmd_update, "Reboot into firmware update mode"},
-    {"console", cmd_console, "Enter UART console mode (38400 8N1)"}
+    {"help", cmd_help, "Show help message"}
 };
 
 // Command lookup table
@@ -60,15 +68,15 @@ static void init_cmd_map() {
     for (const auto& cmd : cmd_table) {
         cmd_map[cmd.name] = &cmd;
     }
-    
+
     // Track non-unique prefixes
     std::vector<std::string> non_unique;
-    
+
     // Try all possible prefixes for each command
     for (const auto& cmd : cmd_table) {
         for (size_t i = 1; i < cmd.name.length(); i++) {
             std::string prefix = cmd.name.substr(0, i);
-            
+
             // Check if this prefix is already in the map
             if (cmd_map.count(prefix)) {
                 non_unique.push_back(prefix);
@@ -77,7 +85,7 @@ static void init_cmd_map() {
             }
         }
     }
-    
+
     // Remove all non-unique prefixes
     for (const auto& prefix : non_unique) {
         cmd_map.erase(prefix);
@@ -87,7 +95,7 @@ static void init_cmd_map() {
 void cmd_help() {
     printf("\nAtlas-11 GPIO Control Interface\n");
     printf("Commands:\n");
-    
+
     // Print help using the command table
     for (const auto& cmd : cmd_table) {
         printf("  %-8s - %s\n", cmd.name.c_str(), cmd.usage.c_str());
@@ -99,18 +107,18 @@ void cmd_help() {
 bool read_line(std::string& buffer) {
     int c;
     buffer.clear();
-    
+
     printf("\n> ");
-    
+
     while (true) {
         c = getchar();
-        
+
         // Handle enter key
         if (c == '\r' || c == '\n') {
             printf("\n");
             return !buffer.empty();  // Return false for empty line
         }
-        
+
         // Handle backspace
         if (c == '\b' || c == 127) {
             if (!buffer.empty()) {
@@ -119,7 +127,7 @@ bool read_line(std::string& buffer) {
             }
             continue;
         }
-        
+
         // Handle regular character
         if (c >= 32 && c <= 126) {  // Printable ASCII
             buffer.push_back(c);
@@ -131,29 +139,33 @@ bool read_line(std::string& buffer) {
 int main() {
     // Initialize stdio
     stdio_init_all();
-    
+
     // Initialize GPIO
-    gpio_init(GPIO_PIN);
-    gpio_set_dir(GPIO_PIN, GPIO_OUT);
-    gpio_put(GPIO_PIN, 0);  // Start with pin low
-    
+    gpio_init(DCJ11_POWER_CTL);
+    gpio_set_dir(DCJ11_POWER_CTL, GPIO_OUT);
+    gpio_put(DCJ11_POWER_CTL, 0);  // Start with pin low
+
+    gpio_init(DCJ11_HALT);
+    gpio_set_dir(DCJ11_HALT, GPIO_OUT);
+    gpio_put(DCJ11_HALT, 0);  // Start with HALT low
+
     // Initialize command map
     init_cmd_map();
-    
+
     // Wait for USB CDC to be ready
     sleep_ms(1000);
-    
+
     printf("Atlas-11 Firmware Starting...\n");
     cmd_help();
-    
+
     std::string cmd;
-    
+
     while (true) {
         if (!read_line(cmd)) {
             cmd_help();
             continue;
         }
-        
+
         // Look up command in map
         auto it = cmd_map.find(cmd);
         if (it != cmd_map.end()) {
@@ -162,6 +174,6 @@ int main() {
             printf("Unknown command. Type 'help' for available commands.\n");
         }
     }
-    
+
     return 0;
-} 
+}
