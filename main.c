@@ -2,6 +2,7 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
+#include "console.h"
 
 #define GPIO_PIN 2
 #define MAX_CMD_LEN 32
@@ -9,10 +10,11 @@
 void print_help(void) {
     printf("\nAtlas-11 GPIO Control Interface\n");
     printf("Commands:\n");
-    printf("  on  - Set GPIO pin %d high\n", GPIO_PIN);
-    printf("  off - Set GPIO pin %d low\n", GPIO_PIN);
+    printf("  on  - Power on the DJC11 SBC\n");
+    printf("  off - Power off the DJC11 SBC\n");
     printf("  help - Show this help message\n");
     printf("  update - Reboot into firmware update mode\n");
+    printf("  console - Enter UART console mode (38400 8N1)\n");
 }
 
 // Read a line of input with basic line editing capabilities
@@ -82,11 +84,11 @@ int main() {
         // Process command
         if (strcmp(cmd, "on") == 0) {
             gpio_put(GPIO_PIN, 1);
-            printf("GPIO pin %d set HIGH\n", GPIO_PIN);
+            printf("DJC11 SBC powered on\n");
         }
         else if (strcmp(cmd, "off") == 0) {
             gpio_put(GPIO_PIN, 0);
-            printf("GPIO pin %d set LOW\n", GPIO_PIN);
+            printf("DJC11 SBC powered off\n");
         }
         else if (strcmp(cmd, "help") == 0) {
             print_help();
@@ -95,6 +97,9 @@ int main() {
             printf("Rebooting into firmware update mode...\n");
             sleep_ms(100);  // Give time for message to be printed
             reset_usb_boot(0, 0);  // Reboot into USB bootloader
+        }
+        else if (strcmp(cmd, "console") == 0) {
+            console_mode();
         }
         else {
             printf("Unknown command. Type 'help' for available commands.\n");

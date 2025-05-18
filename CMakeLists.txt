@@ -18,9 +18,16 @@ set(CMAKE_CXX_STANDARD 17)
 # Initialize the SDK
 pico_sdk_init()
 
-add_executable(atlas-11
+# Add source files
+set(SOURCES
     main.c
+    console.c
 )
+
+add_executable(atlas-11 ${SOURCES})
+
+# Add include directories
+target_include_directories(atlas-11 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Enable USB output, disable UART output
 pico_enable_stdio_usb(atlas-11 1)
