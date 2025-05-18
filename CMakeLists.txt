@@ -13,15 +13,16 @@ include(pimoroni_pico_import.cmake)
 
 project(atlas-11 C CXX ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Initialize the SDK
 pico_sdk_init()
 
 # Add source files
 set(SOURCES
-    main.c
-    console.c
+    main.cpp
+    console.cpp
 )
 
 add_executable(atlas-11 ${SOURCES})
