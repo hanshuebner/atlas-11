@@ -92,15 +92,12 @@ This is the firmware for the Atlas-11 project running on an RP2350 board (PGA235
 | GPIO 19  | DAL14 | Data Address Line 14 |
 | GPIO 20  | DAL15 | Data Address Line 15 |
 | GPIO 21  | INIT | Initialize signal |
-| GPIO 22  | LE | Latch Enable |
-| GPIO 23  | LBS0 | Lower Byte Select 0 |
-| GPIO 24  | LBS1 | Lower Byte Select 1 |
-| GPIO 25  | /WEU | Write Enable Upper |
-| GPIO 26  | /WEL | Write Enable Lower |
-| GPIO 27  | /OE | Output Enable |
-| GPIO 28  | /SCTL | System Control |
-| GPIO 29  | /CONT | Continue signal |
-| GPIO 30  | HALT | Halt signal |
+| GPIO 22  | HALT | Halt signal |
+| GPIO 23  | nALE | Address Latch Enable (negative logic) |
+| GPIO 24  | nSCTL | Stretch Control |
+| GPIO 25  | nCONT | Continue signal (negative logic) |
+| GPIO 26  | nBUFCTL | Buffer Control (Read/Write) |
+| GPIO 27  | nIO | I/O access |
 | GPIO 43 | SPI1_TX | SDCARD MOSI |
 | GPIO 44 | SPI1_RX | SDCARD MISO |
 | GPIO 45 | SPI1_CSn | SDCARD CS |

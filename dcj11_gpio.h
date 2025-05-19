@@ -28,15 +28,12 @@
 
 // Control signals
 #define DCJ11_INIT        21 // Initialize signal
-#define DCJ11_LE          22 // Latch Enable
-#define DCJ11_LBS0        23 // Lower Byte Select 0
-#define DCJ11_LBS1        24 // Lower Byte Select 1
-#define DCJ11_nWEU        25 // Write Enable Upper (negative logic)
-#define DCJ11_nWEL        26 // Write Enable Lower (negative logic)
-#define DCJ11_nOE         27 // Output Enable (negative logic)
-#define DCJ11_nSCTL       28 // System Control (negative logic)
-#define DCJ11_nCONT       29 // Continue signal (negative logic)
-#define DCJ11_HALT        30 // Halt signal
+#define DCJ11_HALT        22 // Halt signal
+#define DCJ11_nALE        23
+#define DCJ11_nSCTL       24 // Stretch Control
+#define DCJ11_nCONT       25 // Continue signal (negative logic)
+#define DCJ11_nBUFCTL     26 // Buffer Control (Read/Write)
+#define DCJ11_nIO         27 // I/O access
 
 // SD Card SPI Interface
 #define DCJ11_SDCARD_MOSI 43 // SPI1 TX
@@ -48,16 +45,15 @@
 #define DCJ11_DAL_MASK    0x001FFFE0  // DAL0-15 (bits 5-20)
 #define DCJ11_CTL_MASK    0x7FE00000  // Control signals (bits 21-30)
 
-// Individual control signal masks
-#define DCJ11_INIT_MASK   (1 << DCJ11_INIT)
-#define DCJ11_LE_MASK     (1 << DCJ11_LE)
-#define DCJ11_LBS0_MASK   (1 << DCJ11_LBS0)
-#define DCJ11_LBS1_MASK   (1 << DCJ11_LBS1)
-#define DCJ11_nWEU_MASK   (1 << DCJ11_nWEU)
-#define DCJ11_nWEL_MASK   (1 << DCJ11_nWEL)
-#define DCJ11_nOE_MASK    (1 << DCJ11_nOE)
-#define DCJ11_nSCTL_MASK  (1 << DCJ11_nSCTL)
-#define DCJ11_nCONT_MASK  (1 << DCJ11_nCONT)
-#define DCJ11_HALT_MASK   (1 << DCJ11_HALT)
+#define DAL_FROM_GPIO(x)  (((x) & DCJ11_DAL_MASK) >> DCJ11_DAL0)
 
-#endif // DCJ11_GPIO_H 
+// Individual control signal masks
+#define DCJ11_INIT_MASK    (1 << DCJ11_INIT)
+#define DCJ11_HALT_MASK    (1 << DCJ11_HALT)
+#define DCJ11_nALE_MASK    (1 << DCJ11_nALE)
+#define DCJ11_nSCTL_MASK   (1 << DCJ11_nSCTL)
+#define DCJ11_nCONT_MASK   (1 << DCJ11_nCONT)
+#define DCJ11_nBUFCTL_MASK (1 << DCJ11_nBUFCTL)
+#define DCJ11_nIO_MASK     (1 << DCJ11_nIO)
+
+#endif // DCJ11_GPIO_H

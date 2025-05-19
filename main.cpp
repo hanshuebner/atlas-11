@@ -53,7 +53,7 @@ static void cmd_console(const std::vector<std::string>& args) {
 
 // Command table
 static const std::vector<cmd_entry> cmd_table = {
-    {"bus", cmd_bus, "Monitor bus transitions (e.g. 'bus 20' for 20 captures, default 10)"},
+    {"iosnoop", cmd_iosnoop, "Monitor I/O access on bus (e.g. 'iosnoop 20' for 20 captures, default 10)"},
     {"console", cmd_console, "Enter UART console mode (38400 8N1) (powers on, too)"},
     {"halt", cmd_halt, "Assert HALT signal for 10ms"},
     {"ls", cmd_ls, "List files on SD card"},
@@ -169,19 +169,23 @@ void init_gpio() {
         gpio_set_dir(pin, GPIO_IN);
     }
 
-    // Initialize control signals as inputs
-    const int control_pins[] = {
-        DCJ11_INIT, DCJ11_LE, DCJ11_LBS0, DCJ11_LBS1,
-        DCJ11_nWEU, DCJ11_nWEL, DCJ11_nOE, DCJ11_nSCTL,
-        DCJ11_nCONT
+    const int control_inputs[] = {
+        DCJ11_INIT, DCJ11_nALE, DCJ11_nSCTL, DCJ11_nBUFCTL, DCJ11_nIO,
     };
 
-    for (int pin : control_pins) {
+    for (int pin : control_inputs) {
         gpio_init(pin);
         gpio_set_dir(pin, GPIO_IN);
     }
 
-    return;
+    const int control_outputs[] = {
+        DCJ11_HALT, DCJ11_nCONT
+    };
+
+    for (int pin : control_outputs) {
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_OUT);
+    }
 }
 
 int main() {
