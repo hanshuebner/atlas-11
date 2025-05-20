@@ -54,6 +54,8 @@ static void cmd_console(const std::vector<std::string>& args) {
 // Command table
 static const std::vector<cmd_entry> cmd_table = {
     {"iosnoop", cmd_iosnoop, "Monitor I/O access on bus (e.g. 'iosnoop 20' for 20 captures, default 10)"},
+    { "write-test", cmd_write_test, "Perform a bus write test (J11 -> Pico)"},
+    { "read-test", cmd_read_test, "Perform a bus read test (Pico -> J11)"},
     {"console", cmd_console, "Enter UART console mode (38400 8N1) (powers on, too)"},
     {"halt", cmd_halt, "Assert HALT signal for 10ms"},
     {"ls", cmd_ls, "List files on SD card"},
