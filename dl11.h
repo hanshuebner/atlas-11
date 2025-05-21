@@ -58,6 +58,10 @@ public:
     uint16_t read(uint16_t offset) override {
         switch (offset) {
             case DL11_RXCS:
+                // if we can read from the fifo, then the rxcs is ready
+                if (multicore_fifo_rvalid()) {
+                    rxcs |= DL11_RX_DONE;  // Set done bit
+                }
                 return rxcs;
             case DL11_RXBUF:
                 // Try to get a character from the multiprocessor queue
@@ -69,6 +73,10 @@ public:
                 }
                 return rxbuf;
             case DL11_TXCS:
+                // if we can write to the fifo, then the txcs is ready
+                if (multicore_fifo_wready()) {
+                    txcs |= DL11_TX_RDY;
+                }
                 return txcs;
             case DL11_TXBUF:
                 return txbuf;
