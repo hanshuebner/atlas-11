@@ -1,5 +1,7 @@
 #include "device.h"
 
+Device* Device::_map[IO_PAGE_SIZE] = {nullptr};
+
 void Device::dispatch_write(uint16_t address, uint16_t value) {
     Device* handler = Device::_map[address & IO_OFFSET_MASK];
     if (handler != nullptr) {

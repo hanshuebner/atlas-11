@@ -24,11 +24,15 @@ set(SOURCES
         main.cpp
         console.cpp
         bus_interface.cpp
+        bus_interface_pio.cpp
         fs.cpp
         device.cpp
         device.h
         dl11.h
 )
+
+# Add PIO program
+pico_generate_pio_header(atlas-11 ${CMAKE_CURRENT_SOURCE_DIR}/bus_interface.pio)
 
 add_executable(atlas-11 ${SOURCES})
 
@@ -42,7 +46,7 @@ pico_enable_stdio_usb(atlas-11 1)
 pico_enable_stdio_uart(atlas-11 0)
 
 # Add the standard library to the build
-target_link_libraries(atlas-11 pico_stdlib pico_fatfs)
+target_link_libraries(atlas-11 pico_stdlib pico_fatfs pico_multicore)
 
 # Create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(atlas-11)

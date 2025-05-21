@@ -4,9 +4,11 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 // Bus monitoring function
-void __not_in_flash_func(cmd_iosnoop)(const std::vector<std::string>& args);
+void __not_in_flash_func(cmd_iosnoop)(const vector<string>& args);
 
-
+void cmd_bus_test(const vector<string> &args);
 
 #endif // BUS_MONITOR_H

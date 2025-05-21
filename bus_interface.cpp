@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-#include <cstdlib>
 #include "pico/stdlib.h"
 #include "dcj11_gpio.h"
 #include "bus_interface.h"
@@ -11,13 +10,6 @@
 #include "dl11.h"
 
 using namespace std;
-
-// Convert octal string to integer
-static bool parse_octal(const string &str, uint32_t &result) {
-    char *endptr = nullptr;
-    result = strtoul(str.c_str(), &endptr, 8);
-    return endptr != str.c_str() && *endptr == '\0';
-}
 
 // Print control signal states
 static void print_control_signals(uint32_t gpio_value) {
@@ -77,7 +69,7 @@ void __not_in_flash_func(cmd_iosnoop)(const vector<string> &args) {
     }
 }
 
-void __not_in_flash_func(handle_bus)(const vector<string> &args) {
+[[noreturn]] void __not_in_flash_func(handle_bus)() {
     DL11 dl11(0176500);
 
     // wait for ALE to be high before looping
@@ -95,7 +87,7 @@ void __not_in_flash_func(handle_bus)(const vector<string> &args) {
 
         // Get the control bits
         uint32_t control_gpio = gpio_get_all();
-        while (control_gpio & DCJ11_nSCTL_MASK) {
+        while (!(control_gpio & DCJ11_nALE_MASK)) {
             control_gpio = gpio_get_all();
         }
 
@@ -104,14 +96,9 @@ void __not_in_flash_func(handle_bus)(const vector<string> &args) {
             // Stretch cycle to make everything timing uncritical from here on
             gpio_put(DCJ11_nCONT, true);
 
-            const bool is_read_access = IS_READ_ACCESS(control_gpio);
-            if (is_read_access) {
-                gpio_set_dir_out_masked(DCJ11_DAL_MASK);
-            }
-
             const uint16_t address = DAL_FROM_GPIO(address_gpio);
-
-            if (is_read_access) {
+            if (IS_READ_ACCESS(control_gpio)) {
+                gpio_set_dir_out_masked(DCJ11_DAL_MASK);
                 uint16_t value = Device::dispatch_read(address);
                 gpio_put_masked(DCJ11_DAL_MASK, GPIO_FROM_DAL(value));
             } else {
@@ -130,3 +117,19 @@ void __not_in_flash_func(handle_bus)(const vector<string> &args) {
         gpio_set_dir_in_masked(DCJ11_DAL_MASK);
     }
 }
+
+void cmd_bus_test(const vector<string> &args) {
+    cout << "Starting bus test, press any key to stop..." << endl;
+
+    multicore_launch_core1(handle_bus);
+    do {
+        if (multicore_fifo_rvalid()) {
+            uint32_t value = multicore_fifo_pop_blocking();
+            cout << "Core 1: " << hex << setw(8) << setfill('0') << value << endl;
+            multicore_fifo_push_blocking(value);
+        }
+    } while (getchar_timeout_us(0) == PICO_ERROR_TIMEOUT);
+    multicore_reset_core1();
+    cout << "Bus test stopped." << endl;
+}
+

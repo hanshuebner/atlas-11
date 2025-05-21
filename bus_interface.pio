@@ -1,0 +1,70 @@
+.program bus_interface
+
+; This PIO program will handle the bus communication protocol between the RP2040 and J-11 CPU
+; The program will be loaded into one of the PIO state machines and handle:
+; - Address latching (nALE)
+; - System control (nSCTL)
+; - I/O access (nIO)
+; - Cycle stretching (nCONT)
+; - Read/Write control (nBUFCTL)
+; - Data transfer on DAL0-15
+
+; Pins are defined in dcj11_gpio.h:
+; - DAL0-15: pins 5-20
+; - nALE: pin 23
+; - nBUFCTL: pin 26
+; - nIO: pin 27
+
+; Pin definitions
+#define nALE_PIN 23
+#define nSCTL_PIN 24
+#define nCONT_PIN 25
+#define DAL_BASE 5  ; DAL0 starts at pin 5
+
+; Side-set pins
+#define SIDE_SET_PINS 0b100000  ; nCONT is bit 5
+
+; Configuration
+.define public DAL_COUNT 16
+.define public ADDR_BITS 12
+.define public DATA_BITS 16
+
+; PIO must be configured for no autopush, PIN is nIO
+
+.wrap_target
+    ; Clear ISR and configure pins as input
+    move isr, null
+    out pindirs, DATA_BITS
+
+    ; Wait for falling ALE edge
+    wait 1 pin nALE_PIN
+    wait 0 pin nALE_PIN
+
+    ; Read 12 bits (address) from DAL pins into ISR
+    in pins, ADDR_BITS
+
+    ; Wait for nSCTL to go low (active)
+    wait 0 pin nSCTL_PIN
+
+    ; If nIO is 1, this is not an I/O cycle
+    jmp pin 0
+
+    ; Read 16 output bits from DAL pins and nBUFCTL into ISR
+    ; nCONT is side set to 1 to stall the J-11 until we're done processing
+    in pins, 17 side 1
+
+    ; Push to driver
+    push side 1
+
+    ; Get response from driver
+    pop side 1
+
+    ; Configure pin directions according to word received on FIFO
+    out pindirs, DATA_BITS side 1
+
+    ; Output data
+    out pins, DATA_BITS side 1
+
+    ; Wait for end of cycle, nCONT asserted to have the J-11 continue
+    wait 1 nSCTL_PIN
+.wrap

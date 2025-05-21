@@ -28,8 +28,8 @@ private:
 
 public:
     explicit DL11(uint16_t base_address) : Device(base_address, 8) {
-        rxcs = DL11_RX_DONE | DL11_RX_IE;  // Receiver ready, interrupts enabled
-        txcs = DL11_TX_RDY | DL11_TX_IE;   // Transmitter ready, interrupts enabled
+        rxcs = 0;  // Receiver ready, interrupts enabled
+        txcs = 0;   // Transmitter ready, interrupts enabled
         rxbuf = 0;
         txbuf = 0;
     }
@@ -58,12 +58,14 @@ public:
     uint16_t read(uint16_t offset) override {
         switch (offset) {
             case DL11_RXCS:
+                return 01101;
                 // if we can read from the fifo, then the rxcs is ready
                 if (multicore_fifo_rvalid()) {
                     rxcs |= DL11_RX_DONE;  // Set done bit
                 }
                 return rxcs;
             case DL11_RXBUF:
+                return 02202;
                 // Try to get a character from the multiprocessor queue
                 if (multicore_fifo_rvalid()) {
                     rxbuf = multicore_fifo_pop_blocking() & DL11_DATA_MASK;
@@ -73,14 +75,17 @@ public:
                 }
                 return rxbuf;
             case DL11_TXCS:
+                return 03303;
                 // if we can write to the fifo, then the txcs is ready
                 if (multicore_fifo_wready()) {
                     txcs |= DL11_TX_RDY;
                 }
                 return txcs;
             case DL11_TXBUF:
+                return 04404;
                 return txbuf;
             default:
+                return 05505;
                 return 0;
         }
     }
