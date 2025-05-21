@@ -45,8 +45,6 @@
 #define DCJ11_DAL_MASK    0x001FFFE0  // DAL0-15 (bits 5-20)
 #define DCJ11_CTL_MASK    0x7FE00000  // Control signals (bits 21-30)
 
-#define DAL_FROM_GPIO(x)  (((x) & DCJ11_DAL_MASK) >> DCJ11_DAL0)
-
 // Individual control signal masks
 #define DCJ11_INIT_MASK    (1 << DCJ11_INIT)
 #define DCJ11_HALT_MASK    (1 << DCJ11_HALT)
@@ -55,5 +53,9 @@
 #define DCJ11_nCONT_MASK   (1 << DCJ11_nCONT)
 #define DCJ11_nBUFCTL_MASK (1 << DCJ11_nBUFCTL)
 #define DCJ11_nIO_MASK     (1 << DCJ11_nIO)
+
+#define DAL_FROM_GPIO(x)  (((x) & DCJ11_DAL_MASK) >> DCJ11_DAL0)
+#define GPIO_FROM_DAL(x)  ((x) << DCJ11_DAL0)
+#define IS_READ_ACCESS(x) (!((x) & DCJ11_nBUFCTL_MASK))
 
 #endif // DCJ11_GPIO_H

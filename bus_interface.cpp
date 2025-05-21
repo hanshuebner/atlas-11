@@ -5,7 +5,9 @@
 #include <cstdlib>
 #include "pico/stdlib.h"
 #include "dcj11_gpio.h"
-#include "bus_monitor.h"
+#include "bus_interface.h"
+
+#include "device.h"
 
 using namespace std;
 
@@ -74,68 +76,54 @@ void __not_in_flash_func(cmd_iosnoop)(const vector<string> &args) {
     }
 }
 
-const uint32_t test_io_address = 017777700;
-
-// Tests
-void __not_in_flash_func(cmd_read_test)(const vector<string> &args) {
-    cout << "Not yet implemented, but going to wiggle /CONT" << endl;
-
-    for (int i = 0; i < 100; i++) {
-        gpio_put(DCJ11_nCONT, 1);
-        busy_wait_ms(10);
-        gpio_put(DCJ11_nCONT, 0);
-        busy_wait_ms(10);
-    }
-}
-
-void __not_in_flash_func(cmd_write_test)(const vector<string> &args) {
-    cout << "Write something to address " << oct << test_io_address << " on the DCJ-11 now!" << endl;
-
-    uint16_t read_data = 0;
-    bool valid = false;
-
-    // wait for ALE to be high
+void __not_in_flash_func(handle_bus)(const vector<string> &args) {
+    // wait for ALE to be high before looping
     while (!(gpio_get_all() & DCJ11_nALE_MASK)) {
         ;
     }
 
-start_cycle:
-    uint32_t address_gpio = gpio_get_all();
+    while (true) {
+        uint32_t address_gpio = gpio_get_all();
 
-    // Wait for ALE falling edge
-    if (address_gpio & DCJ11_nALE_MASK) {
-        goto start_cycle;
+        // Wait for ALE falling edge
+        if (address_gpio & DCJ11_nALE_MASK) {
+            continue;
+        }
+
+        // Get the control bits
+        uint32_t control_gpio = gpio_get_all();
+        while (control_gpio & DCJ11_nSCTL_MASK) {
+            control_gpio = gpio_get_all();
+        }
+
+        // I/O space access?
+        if (!(control_gpio & DCJ11_nIO_MASK)) {
+            // Stretch cycle to make everything timing uncritical from here on
+            gpio_put(DCJ11_nCONT, true);
+
+            const bool is_read_access = IS_READ_ACCESS(control_gpio);
+            if (is_read_access) {
+                gpio_set_dir_out_masked(DCJ11_DAL_MASK);
+            }
+
+            const uint16_t address = DAL_FROM_GPIO(address_gpio);
+
+            if (is_read_access) {
+                uint16_t value = Device::dispatch_read(address);
+                gpio_put_masked(DCJ11_DAL_MASK, GPIO_FROM_DAL(value));
+            } else {
+                Device::dispatch_write(address, DAL_FROM_GPIO(control_gpio));
+            }
+
+            // End stretched cycle
+            gpio_put(DCJ11_nCONT, false);
+        }
+
+
+        while ((gpio_get_all() & (DCJ11_nSCTL_MASK | DCJ11_nALE_MASK)) != (DCJ11_nSCTL_MASK | DCJ11_nALE_MASK)) {
+            tight_loop_contents(); // wait until cycle finished
+        }
+
+        gpio_set_dir_in_masked(DCJ11_DAL_MASK);
     }
-
-    // Is this for our address?
-    if (DAL_FROM_GPIO(address_gpio) != (test_io_address & 0xffff)) {
-        goto start_cycle;
-    }
-
-    // Get the control bits
-    uint32_t control_gpio = gpio_get_all();
-    while (control_gpio & DCJ11_nSCTL_MASK) {
-        control_gpio = gpio_get_all();
-    }
-
-    // Stretch cycle to make everything timing uncritical from here on
-    gpio_put(DCJ11_nCONT, 1);
-
-    // Is this an I/O access, loook for next cycle
-    if ((control_gpio & (DCJ11_nIO_MASK | DCJ11_nBUFCTL_MASK)) == DCJ11_nBUFCTL_MASK) {
-        // Write cycle J-11 to Pico
-        valid = true;
-        read_data = DAL_FROM_GPIO(control_gpio);
-    }
-
-    gpio_put(DCJ11_nCONT, 0);
-
-    while ((gpio_get_all() & (DCJ11_nSCTL_MASK | DCJ11_nALE_MASK)) != (DCJ11_nSCTL_MASK | DCJ11_nALE_MASK)) {
-        ; // wait until cycle finished
-    }
-    if (!valid) {
-        goto start_cycle;
-    }
-
-    cout << "Read data: " << oct << setw(6) << setfill('0') << read_data << endl;
 }

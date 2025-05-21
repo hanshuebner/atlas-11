@@ -23,8 +23,10 @@ pico_sdk_init()
 set(SOURCES
         main.cpp
         console.cpp
-        bus_monitor.cpp
+        bus_interface.cpp
         fs.cpp
+        device.cpp
+        device.h
 )
 
 add_executable(atlas-11 ${SOURCES})
