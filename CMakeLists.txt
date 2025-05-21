@@ -4,12 +4,12 @@ cmake_minimum_required(VERSION 3.13)
 set(PICO_PLATFORM "rp2350")
 set(PICO_BOARD "pimoroni_pga2350")
 
+include(pico_sdk_import.cmake)
+include(pimoroni_pico_import.cmake)
+
 # Add board search directories
 list(APPEND PICO_BOARD_HEADER_DIRS "${PIMORONI_PICO_PATH}/pga2350")
 list(APPEND PICO_BOARD_CMAKE_DIRS "${PIMORONI_PICO_PATH}/pga2350")
-
-include(pico_sdk_import.cmake)
-include(pimoroni_pico_import.cmake)
 
 project(atlas-11 C CXX ASM)
 set(CMAKE_C_STANDARD 11)
@@ -27,17 +27,18 @@ set(SOURCES
         bus_interface_pio.cpp
         fs.cpp
         device.cpp
-        device.h
-        dl11.h
 )
+
+add_executable(atlas-11 ${SOURCES})
 
 # Add PIO program
 pico_generate_pio_header(atlas-11 ${CMAKE_CURRENT_SOURCE_DIR}/bus_interface.pio)
 
-add_executable(atlas-11 ${SOURCES})
-
 # Add include directories
-target_include_directories(atlas-11 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(atlas-11 PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${PIMORONI_PICO_PATH}/pga2350
+)
 
 add_subdirectory(${PICO_FATFS_PATH} pico_fats)
 
