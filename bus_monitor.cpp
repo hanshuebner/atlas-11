@@ -74,7 +74,7 @@ void __not_in_flash_func(cmd_iosnoop)(const vector<string> &args) {
     }
 }
 
-const uint16_t test_io_address = 0177700;
+const uint32_t test_io_address = 017777700;
 
 // Tests
 void __not_in_flash_func(cmd_read_test)(const vector<string> &args) {
@@ -108,7 +108,7 @@ start_cycle:
     }
 
     // Is this for our address?
-    if (DAL_FROM_GPIO(address_gpio) != test_io_address) {
+    if (DAL_FROM_GPIO(address_gpio) != (test_io_address & 0xffff)) {
         goto start_cycle;
     }
 
