@@ -27,6 +27,7 @@ set(SOURCES
         fs.cpp
         device.cpp
         device.h
+        dl11.h
 )
 
 add_executable(atlas-11 ${SOURCES})

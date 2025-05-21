@@ -8,6 +8,7 @@
 #include "bus_interface.h"
 
 #include "device.h"
+#include "dl11.h"
 
 using namespace std;
 
@@ -77,6 +78,8 @@ void __not_in_flash_func(cmd_iosnoop)(const vector<string> &args) {
 }
 
 void __not_in_flash_func(handle_bus)(const vector<string> &args) {
+    DL11 dl11(0176500);
+
     // wait for ALE to be high before looping
     while (!(gpio_get_all() & DCJ11_nALE_MASK)) {
         ;

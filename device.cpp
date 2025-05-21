@@ -1,7 +1,3 @@
-//
-// Created by Hans Hübner on 21.05.25.
-//
-
 #include "device.h"
 
 void Device::dispatch_write(uint16_t address, uint16_t value) {
