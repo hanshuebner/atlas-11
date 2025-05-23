@@ -113,6 +113,7 @@ static void bus_interface_pio_start() {
 
 void bus_interface_pio_stop() {
     pio_sm_set_enabled(pio, sm, false);
+    pio_sm_exec(pio, sm, pio_encode_nop()); // clear nCONT
     pio_clear_instruction_memory(pio);
 }
 
