@@ -27,12 +27,12 @@
 #define DCJ11_DAL15       20 // Data Address Line 15
 
 // Control signals
-#define DCJ11_INIT        21 // Initialize signal
+#define DCJ11_nBUFCTL     21 // Buffer Control (Read/Write)
 #define DCJ11_HALT        22 // Halt signal
 #define DCJ11_nALE        23
 #define DCJ11_nSCTL       24 // Stretch Control
 #define DCJ11_nCONT       25 // Continue signal (negative logic)
-#define DCJ11_nBUFCTL     26 // Buffer Control (Read/Write)
+#define DCJ11_INIT        26 // Initialize signal
 #define DCJ11_nIO         27 // I/O access
 
 // SD Card SPI Interface
@@ -46,12 +46,12 @@
 #define DCJ11_CTL_MASK    0x7FE00000  // Control signals (bits 21-30)
 
 // Individual control signal masks
-#define DCJ11_INIT_MASK    (1 << DCJ11_INIT)
+#define DCJ11_nBUFCTL_MASK (1 << DCJ11_nBUFCTL)
 #define DCJ11_HALT_MASK    (1 << DCJ11_HALT)
 #define DCJ11_nALE_MASK    (1 << DCJ11_nALE)
 #define DCJ11_nSCTL_MASK   (1 << DCJ11_nSCTL)
 #define DCJ11_nCONT_MASK   (1 << DCJ11_nCONT)
-#define DCJ11_nBUFCTL_MASK (1 << DCJ11_nBUFCTL)
+#define DCJ11_INIT_MASK    (1 << DCJ11_INIT)
 #define DCJ11_nIO_MASK     (1 << DCJ11_nIO)
 
 #define DAL_FROM_GPIO(x)  (((x) & DCJ11_DAL_MASK) >> DCJ11_DAL0)

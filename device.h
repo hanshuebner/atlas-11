@@ -11,8 +11,25 @@ private:
     static Device* _map[IO_PAGE_SIZE];
 
 public:
-    static void dispatch_write(uint16_t address, uint16_t value);
-    static uint16_t dispatch_read(uint16_t address);
+    static void clear_map() {
+        for (auto & i : _map) {
+            i = nullptr;
+        }
+    }
+
+    static inline void dispatch_write(uint16_t address, uint16_t value) {
+        Device* handler = Device::_map[address & IO_OFFSET_MASK];
+        if (handler != nullptr) {
+            handler->write(address & handler->_device_offset_mask, value);
+        }
+    }
+    static inline uint16_t dispatch_read(uint16_t address) {
+        Device* handler = Device::_map[address & IO_OFFSET_MASK];
+        if (handler != nullptr) {
+            return handler->read(address & handler->_device_offset_mask);
+        }
+        return 0;
+    }
     uint16_t _device_offset_mask;
 
     Device(uint16_t base_address, uint8_t size) {

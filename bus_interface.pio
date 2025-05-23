@@ -12,7 +12,7 @@
 ; Pins are defined in dcj11_gpio.h:
 ; - DAL0-15: pins 5-20
 ; - nALE: pin 23
-; - nBUFCTL: pin 26
+; - nBUFCTL: pin 21
 ; - nIO: pin 27
 
 ; Pin definitions
@@ -47,7 +47,7 @@
     ; If nIO is 1, this is not an I/O cycle
     jmp pin 0 side 0
 
-    ; Read 16 output bits from DAL pins and nBUFCTL into ISR
+    ; Read 16 output bits from DAL and nBUFCTL pins into ISR
     ; nCONT is side set to 1 to stall the J-11 until we're done processing
     in pins, 17 side 1
 
@@ -60,7 +60,7 @@
     ; Configure pin directions according to word received on FIFO
     out pindirs, DATA_BITS side 1
 
-    ; Output data
+    ; Output data (won't have any effect if we're writing as the pins are set to input in that case)
     out pins, DATA_BITS side 1
 
     ; Wait for end of cycle, nCONT asserted to have the J-11 continue

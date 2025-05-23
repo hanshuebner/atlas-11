@@ -24,7 +24,6 @@ set(SOURCES
         main.cpp
         console.cpp
         bus_interface.cpp
-        bus_interface_pio.cpp
         fs.cpp
         device.cpp
 )
@@ -35,7 +34,7 @@ add_executable(atlas-11 ${SOURCES})
 pico_generate_pio_header(atlas-11 ${CMAKE_CURRENT_SOURCE_DIR}/bus_interface.pio)
 
 # Add include directories
-target_include_directories(atlas-11 PRIVATE 
+target_include_directories(atlas-11 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${PIMORONI_PICO_PATH}/pga2350
 )
