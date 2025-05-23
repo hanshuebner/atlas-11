@@ -83,19 +83,10 @@ static void bus_interface_pio_start() {
     assert(pio_add_program_at_offset(pio, &bus_interface_program, offset) == offset);
 
     // Configure pins
-    pio_gpio_init(pio, DCJ11_nBUFCTL);
-    pio_gpio_init(pio, DCJ11_nALE);
-    pio_gpio_init(pio, DCJ11_nSCTL);
     pio_gpio_init(pio, DCJ11_nCONT);
-    pio_gpio_init(pio, DCJ11_nIO);
-
-    // Initialize DAL pins (DAL0-15)
-    for (int i = 0; i < 16; i++) {
-        pio_gpio_init(pio, DCJ11_DAL0 + i);
-    }
 
     // Configure pin directions
-    pio_sm_set_pindirs_with_mask64(pio, sm,
+    pio_sm_set_pindirs_with_mask(pio, sm,
         DCJ11_nCONT_MASK,
         DCJ11_nALE_MASK | DCJ11_nSCTL_MASK | DCJ11_nCONT_MASK |
         DCJ11_nIO_MASK | DCJ11_nBUFCTL_MASK | DCJ11_DAL_MASK);
@@ -122,6 +113,7 @@ static void bus_interface_pio_start() {
 
 void bus_interface_pio_stop() {
     pio_sm_set_enabled(pio, sm, false);
+    pio_clear_instruction_memory(pio);
 }
 
 [[noreturn]] void __not_in_flash_func(handle_bus)() {
