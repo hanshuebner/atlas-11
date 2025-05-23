@@ -43,10 +43,10 @@ start:
     in pins, ADDR_BITS side 0
 
     ; Wait for nSCTL to go low (active)
-    wait 0 gpio nSCTL_PIN side 0
+    wait 0 gpio nSCTL_PIN side 1
 
     ; If nIO is 1, this is not an I/O cycle
-    jmp pin start side 0
+    jmp pin start side 1
 
     ; Read 16 output bits from DAL and nBUFCTL pins into ISR
     ; nCONT is side set to 1 to stall the J-11 until we're done processing
