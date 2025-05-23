@@ -99,6 +99,7 @@ static void bus_interface_pio_start() {
 
     // Set the 'in' pins (DAL0-15, nBUFCTL)
     sm_config_set_in_pins(&c, DCJ11_DAL0);
+    sm_config_set_in_shift(&c, false, false, 0);
 
     // Set the 'jmp' pin (nIO)
     sm_config_set_jmp_pin(&c, DCJ11_nIO);
@@ -117,11 +118,14 @@ void bus_interface_pio_stop() {
     pio_clear_instruction_memory(pio);
 }
 
+volatile uint32_t last_data;
+
 [[noreturn]] void __not_in_flash_func(handle_bus)() {
 
     while (true) {
         // Wait for data from PIO
         uint32_t data = pio_sm_get_blocking(pio, sm);
+        last_data = data;
 
         // Extract address and control bits
         uint16_t address = data & 0xFFF;  // 12 bits for address
@@ -141,6 +145,7 @@ void bus_interface_pio_stop() {
 }
 
 void cmd_bus_test(const vector<string> &args) {
+    uint32_t previous_data = 0;
     cout << "Starting bus test, press any key to stop..." << endl;
 
     setup_dcj11_devices();
@@ -153,6 +158,13 @@ void cmd_bus_test(const vector<string> &args) {
             uint32_t value = multicore_fifo_pop_blocking();
             cout << "Core 1: " << hex << setw(8) << setfill('0') << value << endl;
             multicore_fifo_push_blocking(value);
+        }
+        if (last_data != previous_data) {
+            cout << "fifo data: address " << oct << setw(4) << setfill('0') << (last_data & 0xfff)
+                    << " " << ((last_data & DCJ11_nBUFCTL_MASK) ? "wr" : "rd")
+                    << " value " << oct << setw(6) << setfill(' ') << (last_data >> DCJ11_nBUFCTL)
+                    << endl;
+            previous_data = last_data;
         }
     } while (getchar_timeout_us(0) == PICO_ERROR_TIMEOUT);
 

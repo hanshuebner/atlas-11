@@ -21,35 +21,32 @@
 .define nCONT_PIN 25
 .define DAL_BASE 5  ; DAL0 starts at pin 5
 
-; Configuration
-.define public DAL_COUNT 16
-.define public ADDR_BITS 12
-.define public DATA_BITS 16
-
 ; PIO must be configured for no autopush, PIN is nIO
 
 .side_set 1
 .wrap_target
 start:
-    ; Clear ISR and configure pins as input
-    mov isr, null side 0
-    out pindirs, DATA_BITS side 0
+    ; Clear shift registers and configure pins as input
+    mov osr, null side 0
+    out pindirs, 16 side 0
 
+no_io:
+    mov isr, null side 0
     ; Wait for falling ALE edge
     wait 1 gpio nALE_PIN side 0
     wait 0 gpio nALE_PIN side 0
 
     ; Read 12 bits (address) from DAL pins into ISR
-    in pins, ADDR_BITS side 0
+    in pins, 12 side 0
 
     ; Wait for nSCTL to go low (active)
+    ; nCONT is side set to 1 to stall the J-11 until we're done processing
     wait 0 gpio nSCTL_PIN side 1
 
     ; If nIO is 1, this is not an I/O cycle
-    jmp pin start side 1
+    jmp pin no_io side 1
 
-    ; Read 16 output bits from DAL and nBUFCTL pins into ISR
-    ; nCONT is side set to 1 to stall the J-11 until we're done processing
+    ; Read 16 DAL bits and nBUFCTL into ISR
     in pins, 17 side 1
 
     ; Push to driver
@@ -59,10 +56,10 @@ start:
     pull side 1
 
     ; Configure pin directions according to word received on FIFO
-    out pindirs, DATA_BITS side 1
+    out pindirs, 16 side 1
 
     ; Output data (won't have any effect if we're writing as the pins are set to input in that case)
-    out pins, DATA_BITS side 1
+    out pins, 16 side 1
 
     ; Wait for end of cycle, nCONT asserted to have the J-11 continue
     wait 1 gpio nSCTL_PIN side 0
