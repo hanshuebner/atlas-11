@@ -1,0 +1,25 @@
+
+
+ Pin # | Name     | Pin Type
+-----------------------------
+   1   | LAIO3    | Input
+   2   | LAIO2    | Input
+   3   | LAIO1    | Input
+   4   | LAIO0    | Input
+   5   | LBS0     | Input
+   6   | LBS1     | Input
+   7   | SCTL     | Input
+   8   | BUFCTL   | Input
+   9   | A0       | Input
+  10   | GND      | GND
+  11   | NC       | Input
+  12   | OE       | Output
+  13   | NC       | NC
+  14   | NC       | NC
+  15   | WEL      | Output
+  16   | WEU      | Output
+  17   | CE       | Output
+  18   | IO       | Output
+  19   | GPREAD   | Output
+  20   | VCC      | VCC
+

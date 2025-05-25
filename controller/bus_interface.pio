@@ -16,7 +16,7 @@
 ; - nIO: pin 27
 
 ; Pin definitions
-.define nALE_PIN 23
+.define nIO_PIN 27
 .define nSCTL_PIN 24
 .define nCONT_PIN 25
 .define DAL_BASE 5  ; DAL0 starts at pin 5
@@ -32,19 +32,16 @@ start:
 
 no_io:
     mov isr, null side 0
-    ; Wait for falling ALE edge
-    wait 1 gpio nALE_PIN side 0
-    wait 0 gpio nALE_PIN side 0
+    ; Wait for falling nIO edge
+    wait 1 gpio nIO_PIN side 0
+    wait 0 gpio nIO_PIN side 0
 
     ; Read 12 bits (address) from DAL pins into ISR
-    in pins, 12 side 0
+    ; nCONT is side set to 1 to stall the J-11 until we're done processing
+    in pins, 12 side 1
 
     ; Wait for nSCTL to go low (active)
-    ; nCONT is side set to 1 to stall the J-11 until we're done processing
     wait 0 gpio nSCTL_PIN side 1
-
-    ; If nIO is 1, this is not an I/O cycle
-    jmp pin no_io side 1
 
     ; Read 16 DAL bits and nBUFCTL into ISR
     in pins, 17 side 1

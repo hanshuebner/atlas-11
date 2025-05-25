@@ -1,0 +1,25 @@
+
+
+                                GAL16V8
+
+                          -------\___/-------
+                    LAIO3 |  1           20 | VCC
+                          |                 |
+                    LAIO2 |  2           19 | GPREAD
+                          |                 |
+                    LAIO1 |  3           18 | IO
+                          |                 |
+                    LAIO0 |  4           17 | CE
+                          |                 |
+                     LBS0 |  5           16 | WEU
+                          |                 |
+                     LBS1 |  6           15 | WEL
+                          |                 |
+                     SCTL |  7           14 | NC
+                          |                 |
+                   BUFCTL |  8           13 | NC
+                          |                 |
+                       A0 |  9           12 | OE
+                          |                 |
+                      GND | 10           11 | NC
+                          -------------------
