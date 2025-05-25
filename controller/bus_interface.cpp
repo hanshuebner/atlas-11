@@ -9,6 +9,7 @@
 
 #include "device.h"
 #include "dl11.h"
+#include "pico/multicore.h"
 
 using namespace std;
 
@@ -70,11 +71,6 @@ void __not_in_flash_func(cmd_iosnoop)(const vector<string> &args) {
     }
 }
 
-static void setup_dcj11_devices() {
-    Device::clear_map();
-    DL11 dl11(0176500);
-}
-
 PIO pio = pio0;
 uint sm = 0;
 uint offset = 0;
@@ -118,19 +114,26 @@ void bus_interface_pio_stop() {
     pio_clear_instruction_memory(pio);
 }
 
-volatile uint32_t last_data;
+volatile uint32_t current_fifo_word;
+
+#define ADDR_OFFSET 17
+#define DATA_WIDTH 16
+#define GET_ADDR(fifo_word) ((fifo_word >> ADDR_OFFSET) & 0xFFF)
+#define GET_DATA(fifo_word) (fifo_word & 0xFFFF)
+#define IS_WRITE(fifo_word) ((fifo_word >> DATA_WIDTH) & 0x1)
+
 
 [[noreturn]] void __not_in_flash_func(handle_bus)() {
 
     while (true) {
         // Wait for data from PIO
-        uint32_t data = pio_sm_get_blocking(pio, sm);
-        last_data = data;
+        uint32_t fifo_word = pio_sm_get_blocking(pio, sm);
+        current_fifo_word = fifo_word;
 
         // Extract address and control bits
-        uint16_t address = data & 0xFFF;  // 12 bits for address
-        uint16_t value = data >> DCJ11_nBUFCTL;
-        if (data & DCJ11_nBUFCTL_MASK) {
+        uint16_t address = GET_ADDR(fifo_word);
+        uint16_t value = GET_DATA(fifo_word);
+        if (IS_WRITE(fifo_word)) {
             // Write operation
             Device::dispatch_write(address, value);
             // Acknowledge operation
@@ -148,23 +151,38 @@ void cmd_bus_test(const vector<string> &args) {
     uint32_t previous_data = 0;
     cout << "Starting bus test, press any key to stop..." << endl;
 
-    setup_dcj11_devices();
+    Device::clear_map();
+
+    queue_t send_queue;
+    queue_t receive_queue;
+
+    queue_init(&send_queue, sizeof(uint8_t), 16);
+    queue_init(&receive_queue, sizeof(uint8_t), 16);
+
+    DL11 dl11(0176500, &send_queue, &receive_queue);
 
     multicore_launch_core1(handle_bus);
     bus_interface_pio_start();
 
     do {
-        if (multicore_fifo_rvalid()) {
-            uint32_t value = multicore_fifo_pop_blocking();
-            cout << "Core 1: " << hex << setw(8) << setfill('0') << value << endl;
-            multicore_fifo_push_blocking(value);
+        if (!queue_is_empty(&send_queue)) {
+            uint8_t value;
+            queue_remove_blocking(&send_queue, &value);
+            cout << "Core 1: " << hex << setw(2) << setfill('0') << value << endl;
+            queue_try_add(&receive_queue, &value);
         }
-        if (last_data != previous_data) {
-            cout << "fifo data: address " << oct << setw(4) << setfill('0') << (last_data & 0xfff)
-                    << " " << ((last_data & DCJ11_nBUFCTL_MASK) ? "wr" : "rd")
-                    << " value " << oct << setw(6) << setfill(' ') << (last_data >> DCJ11_nBUFCTL)
-                    << endl;
-            previous_data = last_data;
+        const uint32_t current = current_fifo_word;
+        if (current != previous_data) {
+            if ((GET_ADDR(current) & 0xff8) != 0xf70) {
+                cout << "Current FIFO word: "
+                        << oct << setw(4) << setfill('0') << GET_ADDR(current)
+                        << " " << (IS_WRITE(current) ? "WRITE" : "READ ")
+                        << " " << oct << setw(6) << setfill(' ') << GET_DATA(current)
+                        << " " << hex << setw(4) << setfill('0') << GET_DATA(current)
+                        << endl;
+            }
+
+            previous_data = current;
         }
     } while (getchar_timeout_us(0) == PICO_ERROR_TIMEOUT);
 

@@ -2,7 +2,7 @@
 #define DEVICE_H
 #include <cstdint>
 
-#define IO_PAGE_SIZE 8192
+#define IO_PAGE_SIZE 4096
 #define IO_OFFSET_MASK (IO_PAGE_SIZE - 1)
 #define IO_PAGE_MASK (~IO_OFFSET_MASK)
 
@@ -28,6 +28,7 @@ public:
         if (handler != nullptr) {
             return handler->read(address & handler->_device_offset_mask);
         }
+        return address; // for testing
         return 0;
     }
     uint16_t _device_offset_mask;
@@ -37,7 +38,7 @@ public:
         for (uint8_t i = 0; i < size; i++) {
             _map[base_offset + i] = this;
         }
-        _device_offset_mask = ~(size - 1);
+        _device_offset_mask = size - 1;
     };
     virtual ~Device() = default;
 

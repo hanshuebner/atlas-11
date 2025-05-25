@@ -2,7 +2,7 @@
 #define DL11_H
 
 #include "device.h"
-#include "pico/multicore.h"
+#include "pico/util/queue.h"
 
 // DL11 register offsets
 #define DL11_RXCS 0  // Receiver Control and Status
@@ -26,8 +26,15 @@ private:
     uint16_t rxbuf; // Receiver Buffer
     uint16_t txbuf; // Transmitter Buffer
 
+    queue_t* send_queue;
+    queue_t* receive_queue;
+
 public:
-    explicit DL11(uint16_t base_address) : Device(base_address, 8) {
+    explicit DL11(uint16_t base_address, queue_t* send_queue_, queue_t* receive_queue_)
+    : Device(base_address, 8),
+      send_queue(send_queue_),
+      receive_queue(receive_queue_)
+    {
         rxcs = 0;  // Receiver ready, interrupts enabled
         txcs = 0;   // Transmitter ready, interrupts enabled
         rxbuf = 0;
@@ -48,7 +55,7 @@ public:
             case DL11_TXBUF:
                 txbuf = value & DL11_DATA_MASK;  // Only low 8 bits are used
                 // Send character to the main core via multiprocessor queue
-                multicore_fifo_push_blocking(txbuf);
+                queue_try_add(send_queue, &txbuf);
                 txcs &= ~DL11_TX_RDY;  // Clear ready bit
                 break;
             default: ;
@@ -58,34 +65,29 @@ public:
     uint16_t read(uint16_t offset) override {
         switch (offset) {
             case DL11_RXCS:
-                return 01101;
                 // if we can read from the fifo, then the rxcs is ready
-                if (multicore_fifo_rvalid()) {
+                if (!queue_is_empty(receive_queue)) {
                     rxcs |= DL11_RX_DONE;  // Set done bit
                 }
                 return rxcs;
             case DL11_RXBUF:
-                return 02202;
                 // Try to get a character from the multiprocessor queue
-                if (multicore_fifo_rvalid()) {
-                    rxbuf = multicore_fifo_pop_blocking() & DL11_DATA_MASK;
+                if (!queue_is_empty(receive_queue)) {
+                    queue_remove_blocking(receive_queue, &rxbuf);
                     rxcs &= ~DL11_RX_DONE;  // Clear done bit
                 } else {
                     rxbuf = 0;  // Return 0 if no data available
                 }
                 return rxbuf;
             case DL11_TXCS:
-                return 03303;
                 // if we can write to the fifo, then the txcs is ready
-                if (multicore_fifo_wready()) {
+                if (!queue_is_full(send_queue)) {
                     txcs |= DL11_TX_RDY;
                 }
                 return txcs;
             case DL11_TXBUF:
-                return 04404;
                 return txbuf;
             default:
-                return 05505;
                 return 0;
         }
     }

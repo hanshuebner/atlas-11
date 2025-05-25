@@ -11,9 +11,9 @@ Pin 19 = GPREAD       XOR = 0   AC1 = 0
   7  xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
 
 Pin 18 = IO           XOR = 0   AC1 = 0
-  8  ---- ---- ---- -x-- x--- ---- ---- ----
-  9  xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
- 10  xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
+  8  x-x- -x-- -x-- -x-- x--- ---- ---- ----
+  9  -xx- ---- ---- -x-- x--- ---- ---- ----
+ 10  ---x ---- ---- -x-- x--- ---- ---- ----
  11  xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
  12  xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
  13  xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
