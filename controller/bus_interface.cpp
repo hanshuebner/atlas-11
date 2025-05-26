@@ -7,6 +7,8 @@
 #include "dcj11_gpio.h"
 #include "bus_interface.h"
 
+#include <chrono>
+
 #include "device.h"
 #include "dl11.h"
 #include "pico/multicore.h"
@@ -80,6 +82,9 @@ static void bus_interface_pio_start() {
 
     // Configure pins
     pio_gpio_init(pio, DCJ11_nCONT);
+    for (int i=0; i<16; i++) {
+        pio_gpio_init(pio, DCJ11_DAL0 + i);
+    }
 
     // Configure pin directions
     pio_sm_set_pindirs_with_mask(pio, sm,
@@ -97,8 +102,9 @@ static void bus_interface_pio_start() {
     sm_config_set_in_pins(&c, DCJ11_DAL0);
     sm_config_set_in_shift(&c, false, false, 0);
 
-    // Set the 'jmp' pin (nIO)
-    sm_config_set_jmp_pin(&c, DCJ11_nIO);
+    // Set out shift direction
+    sm_config_set_out_pins(&c, DCJ11_DAL0, 16);
+    sm_config_set_out_shift(&c, false, false, 0);
 
     // Set the clock divider
     sm_config_set_clkdiv(&c, 1.0f);  // Run at full speed
@@ -137,19 +143,20 @@ volatile uint32_t current_fifo_word;
             // Write operation
             Device::dispatch_write(address, value);
             // Acknowledge operation
-            pio_sm_put_blocking(pio, sm, value << 16);
+            pio_sm_put_blocking(pio, sm, 0);
         } else {
             // Read operation
             value = Device::dispatch_read(address);
             // Acknowledge operation and return value
-            pio_sm_put_blocking(pio, sm, (value << 16) | 0xFFFF);
+            pio_sm_put_blocking(pio, sm, 0xFFFF0000 | value);
         }
     }
 }
 
-void cmd_bus_test(const vector<string> &args) {
-    uint32_t previous_data = 0;
-    cout << "Starting bus test, press any key to stop..." << endl;
+constexpr uint8_t DISCONNECT_CHAR = 0x1c; // ^\
+
+void console_mode() {
+    cout << "Connecting to ODT console, press Ctrl-" << static_cast<char>(DISCONNECT_CHAR + '@') << " to disconnect..." << endl;
 
     Device::clear_map();
 
@@ -159,36 +166,39 @@ void cmd_bus_test(const vector<string> &args) {
     queue_init(&send_queue, sizeof(uint8_t), 16);
     queue_init(&receive_queue, sizeof(uint8_t), 16);
 
-    DL11 dl11(0176500, &send_queue, &receive_queue);
+    DL11 dl11(0177560, &send_queue, &receive_queue);
 
     multicore_launch_core1(handle_bus);
     bus_interface_pio_start();
 
-    do {
+    bool done = false;
+    uint64_t last_input = time_us_64();
+    while (!done) {
         if (!queue_is_empty(&send_queue)) {
             uint8_t value;
             queue_remove_blocking(&send_queue, &value);
-            cout << "Core 1: " << hex << setw(2) << setfill('0') << value << endl;
-            queue_try_add(&receive_queue, &value);
+            putchar(value);
+            fflush(stdout);
         }
-        const uint32_t current = current_fifo_word;
-        if (current != previous_data) {
-            if ((GET_ADDR(current) & 0xff8) != 0xf70) {
-                cout << "Current FIFO word: "
-                        << oct << setw(4) << setfill('0') << GET_ADDR(current)
-                        << " " << (IS_WRITE(current) ? "WRITE" : "READ ")
-                        << " " << oct << setw(6) << setfill(' ') << GET_DATA(current)
-                        << " " << hex << setw(4) << setfill('0') << GET_DATA(current)
-                        << endl;
-            }
-
-            previous_data = current;
+        int value = getchar_timeout_us(0);
+        switch (value) {
+            case PICO_ERROR_TIMEOUT:
+                break;
+            case DISCONNECT_CHAR:
+                if (last_input + 500000 < time_us_64()) {
+                    done = true;
+                    break;
+                }
+                // fall through
+            default:
+                last_input = time_us_64();
+                queue_try_add(&receive_queue, &value);
         }
-    } while (getchar_timeout_us(0) == PICO_ERROR_TIMEOUT);
+    }
 
     bus_interface_pio_stop();
     multicore_reset_core1();
 
-    cout << "Bus test stopped." << endl;
+    cout << endl << "Disconnected." << endl;
 }
 

@@ -5,7 +5,6 @@
 #include <sstream>
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
-#include "console.hpp"
 #include "dcj11_gpio.h"
 #include "bus_interface.h"
 #include "fs.h"
@@ -46,7 +45,7 @@ static void cmd_update(const std::vector<std::string>& args) {
     reset_usb_boot(0, 0);  // Reboot into USB bootloader
 }
 
-static void cmd_console(const std::vector<std::string>& args) {
+static void console_mode(const std::vector<std::string>& args) {
     cmd_on(args);
     console_mode();
 }
@@ -54,8 +53,7 @@ static void cmd_console(const std::vector<std::string>& args) {
 // Command table
 static const std::vector<cmd_entry> cmd_table = {
     {"iosnoop", cmd_iosnoop, "Monitor I/O access on bus (e.g. 'iosnoop 20' for 20 captures, default 10)"},
-    { "bus-test", cmd_bus_test, "Run the bus interface test"},
-    {"console", cmd_console, "Enter UART console mode (38400 8N1) (powers on, too)"},
+    {"console", console_mode, "Enter UART console mode (38400 8N1) (powers on, too)"},
     {"halt", cmd_halt, "Assert HALT signal for 10ms"},
     {"ls", cmd_ls, "List files on SD card"},
     {"on", cmd_on, "Power on the DJC11 SBC"},
