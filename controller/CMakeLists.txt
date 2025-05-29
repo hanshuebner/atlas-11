@@ -21,21 +21,21 @@ pico_sdk_init()
 
 # Add source files
 set(SOURCES
-        main.cpp
-        bus_interface.cpp
-        fs.cpp
-        device.cpp
-        dl11.cpp
+        src/main.cpp
+        src/bus_interface.cpp
+        src/fs.cpp
+        src/device.cpp
+        src/dl11.cpp
 )
 
 add_executable(atlas-11 ${SOURCES})
 
 # Add PIO program
-pico_generate_pio_header(atlas-11 ${CMAKE_CURRENT_SOURCE_DIR}/bus_interface.pio)
+pico_generate_pio_header(atlas-11 ${CMAKE_CURRENT_SOURCE_DIR}/src/bus_interface.pio)
 
 # Add include directories
 target_include_directories(atlas-11 PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${PIMORONI_PICO_PATH}/pga2350
 )
 
