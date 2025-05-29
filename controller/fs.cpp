@@ -14,7 +14,7 @@ pico_fatfs_spi_config_t fatfs_config = {
     DCJ11_SDCARD_CS,
     DCJ11_SDCARD_SCK,
     DCJ11_SDCARD_MOSI,
-    false
+    true
 };
 
 // Helper function to convert FRESULT to error string

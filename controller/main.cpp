@@ -21,12 +21,12 @@ struct cmd_entry {
 
 // Command handlers
 static void cmd_on(const std::vector<std::string>& args) {
-    gpio_put(DCJ11_POWER_CTL, 1);
+    gpio_put(DCJ11_POWER_CTL, 0);
     printf("DJC11 SBC powered on\n");
 }
 
 static void cmd_off(const std::vector<std::string>& args) {
-    gpio_put(DCJ11_POWER_CTL, 0);
+    gpio_put(DCJ11_POWER_CTL, 1);
     printf("DJC11 SBC powered off\n");
 }
 
@@ -155,8 +155,8 @@ bool read_line(std::string& buffer) {
 void init_gpio() {
     // Initialize GPIO
     gpio_init(DCJ11_POWER_CTL);
+    gpio_put(DCJ11_POWER_CTL, 1);  // Start with pin low
     gpio_set_dir(DCJ11_POWER_CTL, GPIO_OUT);
-    gpio_put(DCJ11_POWER_CTL, 0);  // Start with pin low
 
     gpio_init(DCJ11_HALT);
     gpio_set_dir(DCJ11_HALT, GPIO_OUT);
