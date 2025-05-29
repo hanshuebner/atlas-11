@@ -4,8 +4,10 @@
 #include <unordered_map>
 #include <vector>
 #include <sstream>
-#include "pico/stdlib.h"
-#include "pico/bootrom.h"
+#include <bsp/board_api.h>
+#include <pico/stdlib.h>
+#include <pico/bootrom.h>
+#include <tusb.h>
 #include "dcj11_gpio.h"
 #include "bus_interface.h"
 #include "fs.h"
@@ -225,10 +227,32 @@ void init_gpio() {
     }
 }
 
-int main() {
-    // Initialize stdio
-    stdio_uart_init();
+void tud_cdc_rx_cb(uint8_t itf)
+{
+    // allocate buffer for the data in the stack
+    uint8_t buf[CFG_TUD_CDC_RX_BUFSIZE];
 
+    // read the available data
+    // | IMPORTANT: also do this for CDC0 because otherwise
+    // | you won't be able to print anymore to CDC0
+    // | next time this function is called
+    uint32_t count = tud_cdc_n_read(itf, buf, sizeof(buf));
+
+    buf[count] = 0;
+    cout << "Received on CDC " << static_cast<int>(itf) << ": " << buf << endl;
+
+    tud_cdc_n_write(itf, buf, count);
+    tud_cdc_n_write_flush(itf);
+}
+
+int main() {
+
+    board_init();
+    tusb_init();
+    if (board_init_after_tusb) {
+        board_init_after_tusb();
+    }
+    stdio_uart_init();
     init_gpio();
 
     CommandLineInterface cli;
@@ -238,6 +262,8 @@ int main() {
         if (c != PICO_ERROR_TIMEOUT) {
             cli.handle_char(c);
         }
+
+        tud_task();
     }
 
     return 0;

@@ -26,6 +26,7 @@ set(SOURCES
         src/fs.cpp
         src/device.cpp
         src/dl11.cpp
+        src/usb_descriptors.cpp
 )
 
 add_executable(atlas-11 ${SOURCES})
@@ -46,7 +47,14 @@ pico_enable_stdio_usb(atlas-11 0)
 pico_enable_stdio_uart(atlas-11 1)
 
 # Add the standard library to the build
-target_link_libraries(atlas-11 pico_stdlib pico_stdio_uart pico_fatfs pico_multicore)
+target_link_libraries(atlas-11
+        pico_stdlib
+        pico_stdio_uart
+        pico_fatfs
+        pico_multicore
+        pico_unique_id
+        tinyusb_device
+        tinyusb_board)
 
 # Create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(atlas-11)
