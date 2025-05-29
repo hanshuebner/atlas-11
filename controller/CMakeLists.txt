@@ -27,7 +27,10 @@ set(SOURCES
         src/device.cpp
         src/dl11.cpp
         src/usb_descriptors.cpp
-)
+        src/cli.cpp
+        src/terminal_session.cpp
+        src/terminal_session.h
+        src/main.h)
 
 add_executable(atlas-11 ${SOURCES})
 

@@ -24,20 +24,25 @@ private:
     uint16_t _rxbuf; // Receiver Buffer
     uint16_t _txbuf; // Transmitter Buffer
 
-    queue_t* _send_queue;
-    queue_t* _receive_queue;
+    queue_t _send_queue;
+    queue_t _receive_queue;
 
 public:
-    explicit DL11(uint16_t base_address, queue_t* send_queue, queue_t* receive_queue)
-    : Device(base_address, 8),
-      _send_queue(send_queue),
-      _receive_queue(receive_queue)
+    explicit DL11(uint16_t base_address)
+    : Device(base_address, 8)
     {
         _rxcs = 0;  // Receiver ready, interrupts enabled
         _txcs = 0;   // Transmitter ready, interrupts enabled
         _rxbuf = 0;
         _txbuf = 0;
+
+        // Initialize queues
+        queue_init(&_send_queue, sizeof(uint8_t), 16);
+        queue_init(&_receive_queue, sizeof(uint8_t), 16);
     }
+
+    queue_t* get_send_queue() { return &_send_queue; }
+    queue_t* get_receive_queue() { return &_receive_queue; }
 
     void write(uint16_t offset, uint16_t value) override;
     uint16_t read(uint16_t offset) override;

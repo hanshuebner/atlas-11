@@ -9,6 +9,7 @@ using namespace std;
 // Bus monitoring function
 void __not_in_flash_func(cmd_iosnoop)(const vector<string>& args);
 
-void console_mode();
+void start_bus_interface();
+void stop_bus_interface();
 
 #endif // BUS_MONITOR_H

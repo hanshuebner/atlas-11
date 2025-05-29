@@ -128,7 +128,6 @@ volatile uint32_t current_fifo_word;
 #define GET_DATA(fifo_word) (fifo_word & 0xFFFF)
 #define IS_WRITE(fifo_word) ((fifo_word >> DATA_WIDTH) & 0x1)
 
-
 [[noreturn]] void __not_in_flash_func(handle_bus)() {
 
     while (true) {
@@ -153,52 +152,12 @@ volatile uint32_t current_fifo_word;
     }
 }
 
-constexpr uint8_t DISCONNECT_CHAR = 0x1c; // ^\
-
-void console_mode() {
-    cout << "Connecting to ODT console, press Ctrl-" << static_cast<char>(DISCONNECT_CHAR + '@') << " to disconnect..." << endl;
-
-    Device::clear_map();
-
-    queue_t send_queue;
-    queue_t receive_queue;
-
-    queue_init(&send_queue, sizeof(uint8_t), 16);
-    queue_init(&receive_queue, sizeof(uint8_t), 16);
-
-    DL11 dl11(0177560, &send_queue, &receive_queue);
-
+void start_bus_interface() {
     multicore_launch_core1(handle_bus);
     bus_interface_pio_start();
-
-    bool done = false;
-    uint64_t last_input = time_us_64();
-    while (!done) {
-        if (!queue_is_empty(&send_queue)) {
-            uint8_t value;
-            queue_remove_blocking(&send_queue, &value);
-            putchar(value);
-            fflush(stdout);
-        }
-        int value = getchar_timeout_us(0);
-        switch (value) {
-            case PICO_ERROR_TIMEOUT:
-                break;
-            case DISCONNECT_CHAR:
-                if (last_input + 500000 < time_us_64()) {
-                    done = true;
-                    break;
-                }
-                // fall through
-            default:
-                last_input = time_us_64();
-                queue_try_add(&receive_queue, &value);
-        }
-    }
-
-    bus_interface_pio_stop();
-    multicore_reset_core1();
-
-    cout << endl << "Disconnected." << endl;
 }
 
+void stop_bus_interface() {
+    bus_interface_pio_stop();
+    multicore_reset_core1();
+}
