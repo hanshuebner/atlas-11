@@ -1,10 +1,14 @@
-#include <stdio.h>
+#include <iostream>
 #include <string>
+#include <sstream>
+#include <iomanip>
 #include "pico/stdlib.h"
 #include "tf_card.h"
 #include "ff.h"
 #include "dcj11_gpio.h"
 #include "fs.h"
+
+using namespace std;
 
 pico_fatfs_spi_config_t fatfs_config = {
     spi1,  // if unmatched SPI pin assignments with spi0/spi1 or explicitly designated as NULL, SPI PIO will be configured
@@ -45,7 +49,7 @@ static const char* f_result_to_str(FRESULT res) {
 }
 
 // Helper function to format file size in human readable format
-static std::string format_size(uint32_t size) {
+static string format_size(uint32_t size) {
     const char* units[] = {"B", "KB", "MB", "GB"};
     int unit = 0;
     float value = size;
@@ -55,41 +59,32 @@ static std::string format_size(uint32_t size) {
         unit++;
     }
 
-    char buf[32];
+    ostringstream oss;
     if (unit == 0) {
-        snprintf(buf, sizeof(buf), "%d %s", (int)value, units[unit]);
+        oss << static_cast<int>(value) << " " << units[unit];
     } else {
-        snprintf(buf, sizeof(buf), "%.1f %s", value, units[unit]);
+        oss << fixed << setprecision(1) << value << " " << units[unit];
     }
-    return std::string(buf);
+    return oss.str();
 }
 
 // Helper function to format file attributes
-static std::string format_attr(uint8_t attr) {
-    std::string result;
-    if (attr & AM_DIR) result += "d";
-    else result += "-";
-    if (attr & AM_RDO) result += "r";
-    else result += "-";
-    if (attr & AM_HID) result += "h";
-    else result += "-";
-    if (attr & AM_SYS) result += "s";
-    else result += "-";
-    if (attr & AM_ARC) result += "a";
-    else result += "-";
-    return result;
+static string format_attr(uint8_t attr) {
+    const char* const attr_chars = "drhsa";  // directory, read-only, hidden, system, archive
+    const uint8_t attr_bits[] = {AM_DIR, AM_RDO, AM_HID, AM_SYS, AM_ARC};
+    ostringstream result;
+
+    for (const auto& bit : attr_bits) {
+        result << ((attr & bit) ? attr_chars[&bit - attr_bits] : '-');
+    }
+    return result.str();
 }
 
 static void init_sdcard() {
-    bool spi_configured = pico_fatfs_set_config(&fatfs_config);
-    if (spi_configured) {
-        printf("SPI configured for SD card\n");
-    } else {
-        printf("SPI PIO configured for SD card\n");
-    }
+    pico_fatfs_set_config(&fatfs_config);
 }
 
-void cmd_ls(const std::vector<std::string>& args) {
+void cmd_ls(const vector<string>& args) {
     FATFS fs;
     FRESULT res;
 
@@ -98,7 +93,7 @@ void cmd_ls(const std::vector<std::string>& args) {
     // Try to mount the filesystem
     res = f_mount(&fs, "", 1);
     if (res != FR_OK) {
-        printf("Failed to mount SD card: %s\n", f_result_to_str(res));
+        cout << "Failed to mount SD card: " << f_result_to_str(res) << endl;
         return;
     }
 
@@ -108,7 +103,7 @@ void cmd_ls(const std::vector<std::string>& args) {
     // Open the root directory
     res = f_opendir(&dir, "");
     if (res != FR_OK) {
-        printf("Failed to open directory: %s\n", f_result_to_str(res));
+        cout << "Failed to open directory: " << f_result_to_str(res) << endl;
         f_mount(nullptr, "", 0);
         return;
     }
@@ -122,10 +117,9 @@ void cmd_ls(const std::vector<std::string>& args) {
         if (fno.fname[0] == '.') continue;
 
         // Print file info in ls -l format
-        printf("%s %10s %s\n",
-               format_attr(fno.fattrib).c_str(),
-               format_size(fno.fsize).c_str(),
-               fno.fname);
+        cout << format_attr(fno.fattrib) << " "
+             << setw(10) << format_size(fno.fsize) << " "
+             << fno.fname << endl;
     }
 
     // Close directory and unmount

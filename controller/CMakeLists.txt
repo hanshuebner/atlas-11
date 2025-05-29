@@ -42,11 +42,11 @@ target_include_directories(atlas-11 PRIVATE
 add_subdirectory(${PICO_FATFS_PATH} pico_fats)
 
 # Enable USB output, disable UART output
-pico_enable_stdio_usb(atlas-11 1)
-pico_enable_stdio_uart(atlas-11 0)
+pico_enable_stdio_usb(atlas-11 0)
+pico_enable_stdio_uart(atlas-11 1)
 
 # Add the standard library to the build
-target_link_libraries(atlas-11 pico_stdlib pico_fatfs pico_multicore)
+target_link_libraries(atlas-11 pico_stdlib pico_stdio_uart pico_fatfs pico_multicore)
 
 # Create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(atlas-11)
