@@ -47,35 +47,29 @@ enum {
     ITF_NUM_CDC_0_DATA,
     ITF_NUM_CDC_1,
     ITF_NUM_CDC_1_DATA,
+    ITF_NUM_CDC_2,
+    ITF_NUM_CDC_2_DATA,
+    ITF_NUM_CDC_3,
+    ITF_NUM_CDC_3_DATA,
+    ITF_NUM_CDC_4,
+    ITF_NUM_CDC_4_DATA,
     ITF_NUM_TOTAL
 };
 
 // total length of configuration descriptor
 #define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + CFG_TUD_CDC * TUD_CDC_DESC_LEN)
 
-// define endpoint numbers
-#define EPNUM_CDC_0_NOTIF   0x81 // notification endpoint for CDC 0
-#define EPNUM_CDC_0_OUT     0x02 // out endpoint for CDC 0
-#define EPNUM_CDC_0_IN      0x82 // in endpoint for CDC 0
-
-#define EPNUM_CDC_1_NOTIF   0x84 // notification endpoint for CDC 1
-#define EPNUM_CDC_1_OUT     0x05 // out endpoint for CDC 1
-#define EPNUM_CDC_1_IN      0x85 // in endpoint for CDC 1
-
-// configure descriptor (for 2 CDC interfaces)
+// configure descriptor (for 9 CDC interfaces)
 uint8_t const desc_configuration[] = {
     // config descriptor | how much power in mA, count of interfaces, ...
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x80, 100),
 
-    // CDC 0: Communication Interface - TODO: get 64 from tusb_config.h
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_0, 4, EPNUM_CDC_0_NOTIF, 8, EPNUM_CDC_0_OUT, EPNUM_CDC_0_IN, 64),
-    // CDC 0: Data Interface
-    //TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_0_DATA, 4, 0x01, 0x02),
-
-    // CDC 1: Communication Interface - TODO: get 64 from tusb_config.h
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 4, EPNUM_CDC_1_NOTIF, 8, EPNUM_CDC_1_OUT, EPNUM_CDC_1_IN, 64),
-    // CDC 1: Data Interface
-    //TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1_DATA, 4, 0x03, 0x04),
+    // CDC Communication Interfaces
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_0, 4, 0x8A, 8, 0x01, 0x81, 64),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_1, 4, 0x8B, 8, 0x02, 0x82, 64),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_2, 4, 0x8C, 8, 0x03, 0x83, 64),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_3, 4, 0x8D, 8, 0x04, 0x84, 64),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC_4, 4, 0x8E, 8, 0x05, 0x85, 64),
 };
 
 // more device descriptor this time the qualifier
@@ -102,6 +96,8 @@ enum {
     STRID_SERIAL,       // 3: Serials
     STRID_CDC_0,        // 4: CDC Interface 0
     STRID_CDC_1,        // 5: CDC Interface 1
+    STRID_CDC_2,        // 6: CDC Interface 2
+    STRID_CDC_3,        // 7: CDC Interface 3
 };
 
 // array of pointer to descriptor strings
@@ -111,7 +107,10 @@ char16_t const *string_desc_arr[] = {
     u"ATLAS-11",                    // 2: Product
     nullptr,                        // 3: Serials (null so it uses unique ID if available)
     u"Console",                     // 4: CDC Interface 0
-    u"Secondary DH11",              // 5: CDC Interface 1,
+    u"TX0",                         // 5: CDC Interface 1,
+    u"TX1",                         // 6: CDC Interface 2,
+    u"TX2",                         // 7: CDC Interface 3,
+    u"TX3",                         // 8: CDC Interface 4,
 };
 
 // buffer to hold the string descriptor during the request | plus 1 for the null terminator

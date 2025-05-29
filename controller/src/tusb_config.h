@@ -24,8 +24,8 @@
 // DEVICE CONFIGURATION //
 //------------------------
 
-// Enable 4 CDC classes
-#define CFG_TUD_CDC             (2)
+// Enable 5 CDC classes
+#define CFG_TUD_CDC             (5)
 // Set CDC FIFO buffer sizes
 #define CFG_TUD_CDC_RX_BUFSIZE  (64)
 #define CFG_TUD_CDC_TX_BUFSIZE  (64)
