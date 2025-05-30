@@ -11,10 +11,21 @@ include(pimoroni_pico_import.cmake)
 list(APPEND PICO_BOARD_HEADER_DIRS "${PIMORONI_PICO_PATH}/pga2350")
 list(APPEND PICO_BOARD_CMAKE_DIRS "${PIMORONI_PICO_PATH}/pga2350")
 
+include(FetchContent)
+
+FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
 project(atlas-11 C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 
 # Initialize the SDK
 pico_sdk_init()
@@ -29,8 +40,7 @@ set(SOURCES
         src/usb_descriptors.cpp
         src/cli.cpp
         src/terminal_session.cpp
-        src/terminal_session.h
-        src/main.h)
+        src/config.cpp)
 
 add_executable(atlas-11 ${SOURCES})
 
@@ -57,7 +67,8 @@ target_link_libraries(atlas-11
         pico_multicore
         pico_unique_id
         tinyusb_device
-        tinyusb_board)
+        tinyusb_board
+        yaml-cpp::yaml-cpp)
 
 # Create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(atlas-11)

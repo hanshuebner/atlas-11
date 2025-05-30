@@ -9,6 +9,7 @@
 #include "dcj11_gpio.h"
 #include "cli.h"
 #include "dl11.h"
+#include "config.h"
 
 #include "main.h"
 
@@ -86,6 +87,8 @@ int main() {
     }
     stdio_uart_init();
     init_gpio();
+
+    auto config = read_config();
 
     dl11_init();
     start_bus_interface();
