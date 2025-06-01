@@ -16,7 +16,7 @@
 void init_gpio() {
     // Initialize GPIO
     gpio_init(DCJ11_POWER_CTL);
-    gpio_put(DCJ11_POWER_CTL, true);  // Start with DCJ-11 SBC off
+    gpio_put(DCJ11_POWER_CTL, false);  // Start with DCJ-11 SBC off
     gpio_set_dir(DCJ11_POWER_CTL, GPIO_OUT);
 
     gpio_init(DCJ11_HALT);

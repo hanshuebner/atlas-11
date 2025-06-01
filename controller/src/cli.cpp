@@ -24,12 +24,12 @@ void CommandLineInterface::cmd_help(const vector<string>& args) {
 
 // Command handlers
 static void cmd_on(const vector<string>& args) {
-    gpio_put(DCJ11_POWER_CTL, false);
+    gpio_put(DCJ11_POWER_CTL, true);
     cout << "DJC11 SBC powered on" << endl;
 }
 
 static void cmd_off(const vector<string>& args) {
-    gpio_put(DCJ11_POWER_CTL, true);
+    gpio_put(DCJ11_POWER_CTL, false);
     cout << "DJC11 SBC powered off" << endl;
 }
 
