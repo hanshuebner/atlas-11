@@ -1,15 +1,18 @@
 #ifndef CDC_PEER_H
 #define CDC_PEER_H
 
-#include <algorithm>
 #include <pico/util/queue.h>
+#include <tusb.h>
+#include <vector>
+
+using namespace std;
 
 class cdc_peer {
 
     uint8_t _itf;
 
 protected:
-    vector<uint8_t> _read_buf;
+    std::vector<uint8_t> _read_buf;
     vector<uint8_t> _write_buf;
 public:
     explicit cdc_peer(uint8_t itf)

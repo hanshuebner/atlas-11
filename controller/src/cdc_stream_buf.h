@@ -1,6 +1,7 @@
 #ifndef CDC_STREAM_BUF_H
 #define CDC_STREAM_BUF_H
 
+#include <cstring>
 #include <streambuf>
 #include "cdc_peer.h"
 
@@ -31,7 +32,7 @@ protected:
 
         // Calculate how much space we have left
         std::streamsize space_left = _usable_buffer_size - _write_pos - 1;
-        
+
         // If we have enough space, copy everything at once
         if (count <= space_left) {
             memcpy(_out_buffer + _write_pos, s, count);
