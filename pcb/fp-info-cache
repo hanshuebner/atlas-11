@@ -1,4 +1,4 @@
-25228754557801939
+25234001372855333
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -66695,6 +66695,27 @@ DCJ-11 SBC Expansion Port Debug Header
 0
 50
 50
+Library
+pmod_pin_array_6x2
+QMOD Pin Header 2 x 6 pins
+CONN
+0
+12
+12
+Library
+pmod_pin_array_6x2_hs
+QMOD Pin Header 2 x 6 pins
+CONN
+0
+12
+12
+Library
+pmod_pin_array_6x2_xadc
+QMOD Pin Header 2 x 6 pins
+CONN
+0
+12
+12
 Module
 A20_OLINUXINO_LIME2
 A20 Olinuxino LIME2, 1.2GHz, 512-1024MB RAM, Micro-SD, NAND or eMMC, 1000Mbit Ethernet
