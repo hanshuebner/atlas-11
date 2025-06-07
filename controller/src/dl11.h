@@ -17,6 +17,8 @@
 // Data mask for 8-bit characters
 #define DL11_DATA_MASK 0xFF
 
+#define QUEUE_SIZE 64
+
 class DL11 : public Device {
 private:
     uint16_t _rxcs;  // Receiver Control and Status
@@ -37,8 +39,8 @@ public:
         _txbuf = 0;
 
         // Initialize queues
-        queue_init(&_send_queue, sizeof(uint8_t), 16);
-        queue_init(&_receive_queue, sizeof(uint8_t), 16);
+        queue_init(&_send_queue, sizeof(uint8_t), QUEUE_SIZE);
+        queue_init(&_receive_queue, sizeof(uint8_t), QUEUE_SIZE);
     }
 
     queue_t* get_send_queue() { return &_send_queue; }

@@ -48,34 +48,44 @@ void init_gpio() {
     }
 }
 
-void tud_cdc_rx_cb(uint8_t itf)
-{
-    // allocate buffer for the data in the stack
-    uint8_t buf[CFG_TUD_CDC_RX_BUFSIZE];
-
-    // read the available data
-    // | IMPORTANT: also do this for CDC0 because otherwise
-    // | you won't be able to print anymore to CDC0
-    // | next time this function is called
-    uint32_t count = tud_cdc_n_read(itf, buf, sizeof(buf));
-
-    buf[count] = 0;
-    cout << "Received on CDC " << static_cast<int>(itf) << ": " << buf << endl;
-
-    tud_cdc_n_write(itf, buf, count);
-    tud_cdc_n_write_flush(itf);
-}
-
-map<string, DL11*> dl11_map;
+typedef array<uint8_t, CFG_TUD_CDC_TX_BUFSIZE> cdc_tx_buffer_t;
+vector<cdc_tx_buffer_t> tx_buffers(CFG_TUD_CDC);
+vector<DL11*> dl11s(CFG_TUD_CDC);
 
 void dl11_init() {
     Device::clear_map();
 
-    dl11_map["console"] = new DL11(0177560);
-    dl11_map["tx0"] = new DL11(0176500);
-    dl11_map["tx1"] = new DL11(0176510);
-    dl11_map["tx2"] = new DL11(0176520);
-    dl11_map["tx3"] = new DL11(0176530);
+    dl11s[0] = new DL11(0177560);
+    dl11s[1] = new DL11(0176500);
+    dl11s[2] = new DL11(0176510);
+    dl11s[3] = new DL11(0176520);
+    dl11s[4] = new DL11(0176530);
+}
+
+void cdc_task() {
+    uint8_t rx_buffer[CFG_TUD_CDC_RX_BUFSIZE+1];
+
+    for (uint8_t itf = 0; itf < CFG_TUD_CDC; itf++) {
+        auto send_queue = dl11s[itf]->get_send_queue();
+        if (tud_cdc_n_available(itf) && queue_is_empty(send_queue)) {
+            uint32_t count = tud_cdc_n_read(itf, rx_buffer, sizeof(rx_buffer));
+            for (int i = 0; i < count; i++) {
+                queue_add_blocking(send_queue, &rx_buffer[i]);
+            }
+        }
+        auto receive_queue = dl11s[itf]->get_receive_queue();
+        if (!queue_is_empty(receive_queue) && !tud_cdc_n_write_flush(itf)) {
+            auto tx_buffer = tx_buffers[itf];
+            int count = 0;
+            for (; count < CFG_TUD_CDC_TX_BUFSIZE; count++) {
+                if (!queue_try_remove(receive_queue, &tx_buffer[count])) {
+                    break;
+                }
+            }
+            tud_cdc_n_write(itf, tx_buffer.data(), count);
+            tud_cdc_n_write_flush(itf);
+        }
+    }
 }
 
 int main() {
@@ -88,14 +98,12 @@ int main() {
     stdio_uart_init();
     init_gpio();
 
-    printf("hello world\n");
     auto config = read_config();
 
     dl11_init();
     start_bus_interface();
 
     CommandLineInterface cli;
-    printf("entering main loop\n");
 
     while (true) {
         int c = getchar_timeout_us(0);
@@ -104,5 +112,6 @@ int main() {
         }
 
         tud_task();
+        cdc_task();
     }
 }

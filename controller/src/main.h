@@ -10,8 +10,4 @@
 
 using namespace std;
 
-class DL11;
-
-extern map<string, DL11*> dl11_map;
-
 #endif //MAIN_H
