@@ -7,11 +7,13 @@
 #include "ff.h"
 #include "dcj11_gpio.h"
 #include "fs.h"
+#include "command_system.h"
 
 using namespace std;
 
 pico_fatfs_spi_config_t fatfs_config = {
-    spi1,  // if unmatched SPI pin assignments with spi0/spi1 or explicitly designated as NULL, SPI PIO will be configured
+    spi1,
+    // if unmatched SPI pin assignments with spi0/spi1 or explicitly designated as NULL, SPI PIO will be configured
     CLK_SLOW_DEFAULT,
     CLK_FAST_DEFAULT,
     DCJ11_SDCARD_MISO,
@@ -22,7 +24,7 @@ pico_fatfs_spi_config_t fatfs_config = {
 };
 
 // Helper function to convert FRESULT to error string
-static const char* f_result_to_str(FRESULT res) {
+static const char *f_result_to_str(FRESULT res) {
     switch (res) {
         case FR_OK: return "Succeeded";
         case FR_DISK_ERR: return "A hard error occurred in the low level disk I/O layer";
@@ -50,7 +52,7 @@ static const char* f_result_to_str(FRESULT res) {
 
 // Format file size in human-readable format
 static string format_size(uint32_t size) {
-    const char* units[] = {"B", "KB", "MB", "GB"};
+    const char *units[] = {"B", "KB", "MB", "GB"};
     int unit = 0;
     auto value = static_cast<float>(size);
 
@@ -70,11 +72,11 @@ static string format_size(uint32_t size) {
 
 // Format file attributes
 static string format_attr(uint8_t attr) {
-    const char* const attr_chars = "drhsa";
+    const char *const attr_chars = "drhsa";
     const uint8_t attr_bits[] = {AM_DIR, AM_RDO, AM_HID, AM_SYS, AM_ARC};
     ostringstream result;
 
-    for (const auto& bit : attr_bits) {
+    for (const auto &bit: attr_bits) {
         result << ((attr & bit) ? attr_chars[&bit - attr_bits] : '-');
     }
     return result.str();
@@ -86,10 +88,11 @@ static void init_sdcard() {
 
 // RAII wrapper for SD card mounting
 class ScopedSDCardMount {
-    FATFS& fs;
+    FATFS &fs;
     bool mounted;
+
 public:
-    explicit ScopedSDCardMount(FATFS& fs) : fs(fs), mounted(false) {
+    explicit ScopedSDCardMount(FATFS &fs) : fs(fs), mounted(false) {
         init_sdcard();
         FRESULT res = f_mount(&fs, "", 1);
         if (res != FR_OK) {
@@ -126,49 +129,54 @@ T with_sdcard_mounted(F action, T default_value) {
     }
 }
 
-void cmd_ls(const vector<string>& args) {
-    FATFS fs;
+// Register the ls command
+static Command ls_cmd = {
+    "ls",
+    "List files on SD card",
+    [](ostream &out, const vector<string> &args) {
+        FATFS fs;
 
-    init_sdcard();
+        init_sdcard();
 
-    // Try to mount the filesystem
-    FRESULT res = f_mount(&fs, "", 1);
-    if (res != FR_OK) {
-        cout << "Failed to mount SD card: " << f_result_to_str(res) << endl;
-        return;
-    }
+        // Try to mount the filesystem
+        FRESULT res = f_mount(&fs, "", 1);
+        if (res != FR_OK) {
+            out << "Failed to mount SD card: " << f_result_to_str(res) << endl;
+            return;
+        }
 
-    DIR dir;
-    FILINFO fno;
+        DIR dir;
+        FILINFO fno;
 
-    // Open the root directory
-    res = f_opendir(&dir, "");
-    if (res != FR_OK) {
-        cout << "Failed to open directory: " << f_result_to_str(res) << endl;
+        // Open the root directory
+        res = f_opendir(&dir, "");
+        if (res != FR_OK) {
+            out << "Failed to open directory: " << f_result_to_str(res) << endl;
+            f_mount(nullptr, "", 0);
+            return;
+        }
+
+        // Read and print directory entries
+        while (true) {
+            res = f_readdir(&dir, &fno);
+            if (res != FR_OK || fno.fname[0] == 0) break;
+
+            // Skip "." and ".." entries
+            if (fno.fname[0] == '.') continue;
+
+            // Print file info in ls -l format
+            out << format_attr(fno.fattrib) << " "
+                    << setw(10) << format_size(fno.fsize) << " "
+                    << fno.fname << endl;
+        }
+
+        // Close directory and unmount
+        f_closedir(&dir);
         f_mount(nullptr, "", 0);
-        return;
     }
+};
 
-    // Read and print directory entries
-    while (true) {
-        res = f_readdir(&dir, &fno);
-        if (res != FR_OK || fno.fname[0] == 0) break;
-
-        // Skip "." and ".." entries
-        if (fno.fname[0] == '.') continue;
-
-        // Print file info in ls -l format
-        cout << format_attr(fno.fattrib) << " "
-             << setw(10) << format_size(fno.fsize) << " "
-             << fno.fname << endl;
-    }
-
-    // Close directory and unmount
-    f_closedir(&dir);
-    f_mount(nullptr, "", 0);
-}
-
-string slurp(const string& filename) {
+string slurp(const string &filename) {
     return with_sdcard_mounted([&filename]() -> string {
         FIL file;
         FRESULT res = f_open(&file, filename.c_str(), FA_READ);
@@ -190,5 +198,5 @@ string slurp(const string& filename) {
 
         f_close(&file);
         return ss.str();
-    }, string(""));  // Return empty string if mounting fails
+    }, string("")); // Return empty string if mounting fails
 }

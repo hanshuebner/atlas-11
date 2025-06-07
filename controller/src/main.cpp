@@ -88,12 +88,14 @@ int main() {
     stdio_uart_init();
     init_gpio();
 
+    printf("hello world\n");
     auto config = read_config();
 
     dl11_init();
     start_bus_interface();
 
     CommandLineInterface cli;
+    printf("entering main loop\n");
 
     while (true) {
         int c = getchar_timeout_us(0);

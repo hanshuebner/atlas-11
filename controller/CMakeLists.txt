@@ -40,7 +40,9 @@ set(SOURCES
         src/usb_descriptors.cpp
         src/cli.cpp
         src/terminal_session.cpp
-        src/config.cpp)
+        src/config.cpp
+        src/command_registry.cpp
+        src/command_system.cpp)
 
 add_executable(atlas-11 ${SOURCES})
 

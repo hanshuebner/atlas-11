@@ -4,12 +4,12 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <iostream>
 
-// List files on SD card
-void cmd_ls(const std::vector<std::string>& args);
+using namespace std;
 
 // Read entire file contents into a string
-std::string slurp(const std::string& filename);
+string slurp(const string& filename);
 
 // Generic function to safely mount SD card, execute action, and unmount
 template<typename F, typename T = void>
