@@ -1,0 +1,71 @@
+;
+;	Redesign of TU-58 bootstrap Peter Schranz 07-June-2025
+;
+;	First we send two characters 03FF with the break bit set, this is
+;	to time the break signal in a way to make it longer notable longer
+;	than a single character. First we need to make sure that the UART
+;	accepts a new character, i.e. TBRE must be set (this is bit 7 of
+;	the XCSR). The transmitter is buffered, so when we
+;	place the first character into the transmission buffer register
+;	the character will be placed almost immediately into the transmission
+;	register and the UART sets TBRE again. This takes approx 1.5 to 2.5
+;	the time it takes for one bit to be sent, see CDP6402 datasheet for
+;	example. Now we can place the second character into the transmission
+;	buffer register. When the first character has been sent the second
+;	character is copied from the transmission buffer register to the
+;	transmission register and TBRE is set. The time elapsed now from 
+;	the moment we have set the BRK bit until now is equivalent to approx
+;	14 bits. Which is longer than the 10 bits (1 start, 8 data and
+;	one stop bit) of sending a character and should be recognized as 
+;	BRK signal. Typically the remote end will detect this as a framing
+;	error as there was no stop bit after the start and eight data bits.
+;	Typically framing error is used as an equivalent to break. Note
+;	that when we now clear the BRK bit the second character is still 
+;	being sent out the transmission register. But as we sent 0377
+;	as the character during BRK the rest of the character and the stop
+;	bit are sent as MARK and the remote end will not know that this
+;	is just the end of the second 0377. We now will send the three
+;	necessary bytes to request the boot block. As the first of this
+;	three bytes is sent after the second 0377 has been sent completely
+;	the remote end will detect these characters perfectly without errors.
+;	After the BRK the TU-58 protocol expects at least one INIT before
+;	the first command is accepted. This is the first character being sent.
+;	Then second and third characters sent are the special boot command
+;	which just consists of the BOOT flag and the UNIT number.
+;
+;	../src/macro11 ddboot5.mac -o ddboot5.obj -l ddboot5.lst
+;	perl ../obj2bin-master/obj2bin.pl --raw --rt11 --outfile=ddboot5.bin ddboot5.obj
+;
+;
+XCSR	= 176504
+	.asect
+	.=	73000		; BootROM Start
+BOOTDD:	mov	#XCSR, r3	; 
+	mov	r3, r1
+	inc	(r3)		; BRK
+	mov	(pc)+, r2
+	.byte	377,377		; Send two 0377 characters
+1$:	tstb	(r3)
+	bpl	1$
+	movb	r2, 2(r3)
+	clrb	r2		; mark that we have sent this character
+	swab	r2		; next character (aka second character)
+	bne	1$		; after this r2 is zero and used as buffer address
+3$:	tstb	(r3)		; all characters sent, now wait for TBRE to
+	bpl	3$		; be set again.
+	clr	(r3)		; ~BRK
+	mov	#4, r0		; special bit shift trick using that BOOT is
+				; just INIT shifted one bit to the left.
+	tst	-(r1)		; RBUF, in case there is a INIT from the TU-58
+20$:	bic	#20, r0		; INIT, BOOT, UNIT, the bic makes sure that
+30$:	tstb	(r3)		; r0 is all zeroes after we sent the BOOT flags.
+	bpl	30$
+	movb	r0, 2(r3)
+	asl	r0		; after we sent UNIT r0 is zero
+	bne	20$		; 
+40$:	tstb	-2(r1)		; retrieve boot block as result of BOOT UNIT 0
+	bpl	40$		;
+	movb	(r1),(r2)+	; store byte
+	cmp	#1000, r2
+	bhi	40$
+	clr	pc		; and here we go

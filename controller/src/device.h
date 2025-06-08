@@ -33,9 +33,9 @@ public:
     }
     uint16_t _device_offset_mask;
 
-    Device(uint16_t base_address, uint8_t size) {
+    Device(uint16_t base_address, uint16_t size) {
         const uint16_t base_offset = base_address & IO_OFFSET_MASK;
-        for (uint8_t i = 0; i < size; i++) {
+        for (uint16_t i = 0; i < size; i++) {
             _map[base_offset + i] = this;
         }
         _device_offset_mask = size - 1;

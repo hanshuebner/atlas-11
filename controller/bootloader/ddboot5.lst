@@ -1,0 +1,72 @@
+       1                                ;
+       2                                ;	Redesign of TU-58 bootstrap Peter Schranz 07-June-2025
+       3                                ;
+       4                                ;	First we send two characters 03FF with the break bit set, this is
+       5                                ;	to time the break signal in a way to make it longer notable longer
+       6                                ;	than a single character. First we need to make sure that the UART
+       7                                ;	accepts a new character, i.e. TBRE must be set (this is bit 7 of
+       8                                ;	the XCSR). The transmitter is buffered, so when we
+       9                                ;	place the first character into the transmission buffer register
+      10                                ;	the character will be placed almost immediately into the transmission
+      11                                ;	register and the UART sets TBRE again. This takes approx 1.5 to 2.5
+      12                                ;	the time it takes for one bit to be sent, see CDP6402 datasheet for
+      13                                ;	example. Now we can place the second character into the transmission
+      14                                ;	buffer register. When the first character has been sent the second
+      15                                ;	character is copied from the transmission buffer register to the
+      16                                ;	transmission register and TBRE is set. The time elapsed now from 
+      17                                ;	the moment we have set the BRK bit until now is equivalent to approx
+      18                                ;	14 bits. Which is longer than the 10 bits (1 start, 8 data and
+      19                                ;	one stop bit) of sending a character and should be recognized as 
+      20                                ;	BRK signal. Typically the remote end will detect this as a framing
+      21                                ;	error as there was no stop bit after the start and eight data bits.
+      22                                ;	Typically framing error is used as an equivalent to break. Note
+      23                                ;	that when we now clear the BRK bit the second character is still 
+      24                                ;	being sent out the transmission register. But as we sent 0377
+      25                                ;	as the character during BRK the rest of the character and the stop
+      26                                ;	bit are sent as MARK and the remote end will not know that this
+      27                                ;	is just the end of the second 0377. We now will send the three
+      28                                ;	necessary bytes to request the boot block. As the first of this
+      29                                ;	three bytes is sent after the second 0377 has been sent completely
+      30                                ;	the remote end will detect these characters perfectly without errors.
+      31                                ;	After the BRK the TU-58 protocol expects at least one INIT before
+      32                                ;	the first command is accepted. This is the first character being sent.
+      33                                ;	Then second and third characters sent are the special boot command
+      34                                ;	which just consists of the BOOT flag and the UNIT number.
+      35                                ;
+      36                                ;	../src/macro11 ddboot5.mac -o ddboot5.obj -l ddboot5.lst
+      37                                ;	perl ../obj2bin-master/obj2bin.pl --raw --rt11 --outfile=ddboot5.bin ddboot5.obj
+      38                                ;
+      39                                ;
+      40 176504                         XCSR	= 176504
+      41                                	.asect
+      42 073000                         	.=	73000		; BootROM Start
+      43 073000 012703  176504          BOOTDD:	mov	#XCSR, r3	; 
+      44 073004 010301                  	mov	r3, r1
+      45 073006 005213                  	inc	(r3)		; BRK
+      46 073010 012702                  	mov	(pc)+, r2
+      47 073012    377     377          	.byte	377,377		; Send two 0377 characters
+      48 073014 105713                  1$:	tstb	(r3)
+      49 073016 100376                  	bpl	1$
+      50 073020 110263  000002          	movb	r2, 2(r3)
+      51 073024 105002                  	clrb	r2		; mark that we have sent this character
+      52 073026 000302                  	swab	r2		; next character (aka second character)
+      53 073030 001371                  	bne	1$		; after this r2 is zero and used as buffer address
+      54 073032 105713                  3$:	tstb	(r3)		; all characters sent, now wait for TBRE to
+      55 073034 100376                  	bpl	3$		; be set again.
+      56 073036 005013                  	clr	(r3)		; ~BRK
+      57 073040 012700  000004          	mov	#4, r0		; special bit shift trick using that BOOT is
+      58                                				; just INIT shifted one bit to the left.
+      59 073044 005741                  	tst	-(r1)		; RBUF, in case there is a INIT from the TU-58
+      60 073046 042700  000020          20$:	bic	#20, r0		; INIT, BOOT, UNIT, the bic makes sure that
+      61 073052 105713                  30$:	tstb	(r3)		; r0 is all zeroes after we sent the BOOT flags.
+      62 073054 100376                  	bpl	30$
+      63 073056 110063  000002          	movb	r0, 2(r3)
+      64 073062 006300                  	asl	r0		; after we sent UNIT r0 is zero
+      65 073064 001370                  	bne	20$		; 
+      66 073066 105761  177776          40$:	tstb	-2(r1)		; retrieve boot block as result of BOOT UNIT 0
+      67 073072 100375                  	bpl	40$		;
+      68 073074 111122                  	movb	(r1),(r2)+	; store byte
+      69 073076 022702  001000          	cmp	#1000, r2
+      70 073102 101371                  	bhi	40$
+      71 073104 005007                  	clr	pc		; and here we go
+      71                                
