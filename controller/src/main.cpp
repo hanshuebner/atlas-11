@@ -66,19 +66,19 @@ void cdc_task() {
     uint8_t rx_buffer[CFG_TUD_CDC_RX_BUFSIZE+1];
 
     for (uint8_t itf = 0; itf < CFG_TUD_CDC; itf++) {
-        auto send_queue = dl11s[itf]->get_send_queue();
-        if (tud_cdc_n_available(itf) && queue_is_empty(send_queue)) {
+        auto receive_queue = dl11s[itf]->get_receive_queue();
+        if (tud_cdc_n_available(itf) && queue_is_empty(receive_queue)) {
             uint32_t count = tud_cdc_n_read(itf, rx_buffer, sizeof(rx_buffer));
             for (int i = 0; i < count; i++) {
-                queue_add_blocking(send_queue, &rx_buffer[i]);
+                queue_add_blocking(receive_queue, &rx_buffer[i]);
             }
         }
-        auto receive_queue = dl11s[itf]->get_receive_queue();
-        if (!queue_is_empty(receive_queue) && !tud_cdc_n_write_flush(itf)) {
+        auto send_queue = dl11s[itf]->get_send_queue();
+        if (!queue_is_empty(send_queue) && !tud_cdc_n_write_flush(itf)) {
             auto tx_buffer = tx_buffers[itf];
             int count = 0;
             for (; count < CFG_TUD_CDC_TX_BUFSIZE; count++) {
-                if (!queue_try_remove(receive_queue, &tx_buffer[count])) {
+                if (!queue_try_remove(send_queue, &tx_buffer[count])) {
                     break;
                 }
             }
