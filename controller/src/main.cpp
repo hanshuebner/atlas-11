@@ -14,6 +14,7 @@
 #include "main.h"
 
 #include "boot_rom.h"
+#include "sd11.h"
 
 void init_gpio() {
     // Initialize GPIO
@@ -89,6 +90,7 @@ typedef array<uint8_t, CFG_TUD_CDC_TX_BUFSIZE> cdc_tx_buffer_t;
 vector<cdc_tx_buffer_t> tx_buffers(CFG_TUD_CDC);
 vector<DL11*> dl11s(CFG_TUD_CDC);
 boot_rom* dd5boot;
+sd11* sdcard;
 
 void dcj11_device_init() {
     Device::clear_map();
@@ -100,6 +102,7 @@ void dcj11_device_init() {
     dl11s[4] = new DL11(0176530);
 
     dd5boot = new boot_rom(0173000, dd5boot_words);
+    sdcard = new sd11(0177600);
 }
 
 void cdc_task() {

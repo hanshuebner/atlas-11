@@ -13,6 +13,7 @@
 // Status register bits
 #define DL11_RX_DONE 0x80  // Receiver Done
 #define DL11_TX_RDY  0x80  // Transmitter Ready
+#define DL11_TX_BRK  0x01  // Break
 
 // Data mask for 8-bit characters
 #define DL11_DATA_MASK 0xFF
@@ -26,8 +27,8 @@ private:
     uint16_t _rxbuf; // Receiver Buffer
     uint16_t _txbuf; // Transmitter Buffer
 
-    queue_t _send_queue;
-    queue_t _receive_queue;
+    queue_t _send_queue{};
+    queue_t _receive_queue{};
 
 public:
     explicit DL11(uint16_t base_address)

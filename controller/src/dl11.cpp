@@ -4,8 +4,10 @@ void DL11::write(uint16_t offset, uint16_t value) {
     switch (offset) {
         case DL11_RXCS:
         case DL11_RXBUF:
+            // Writes to receive status and data registers are ignored
+            break;
         case DL11_TXCS:
-            // Writes to status and receive registers are ignored
+            // Writes to transmit status register is ignored
             break;
         case DL11_TXBUF:
             _txbuf = value & DL11_DATA_MASK;  // Only low 8 bits are used

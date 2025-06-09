@@ -37,6 +37,7 @@ set(SOURCES
         src/fs.cpp
         src/device.cpp
         src/dl11.cpp
+        src/sd11.cpp
         src/usb_descriptors.cpp
         src/cli.cpp
         src/terminal_session.cpp
