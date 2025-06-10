@@ -1,0 +1,39 @@
+       1                                ;;; Bootstrap code for the sd11 device
+       2                                ;;;
+       3                                ;;; The sd11 device mounts the forth.bin file when it is initialized.
+       4                                ;;; The bootstrap sends the INIT command and then reads blocks from the
+       5                                ;;; file to memory starting at location 01000 until it encounters an
+       6                                ;;;; error, which indicates the end of the forth.bin file.  It then
+       7                                ;;; jumps to location 1000 to start forth.
+       8                                ;;;
+       9                                ;;; This boot loader is based on the Redesign of the TU-58 bootstrap
+      10                                ;;; Peter Schranz 07-June-2025
+      11                                ;;; 
+      12                                ;;; ../src/macro11 ddboot5.mac -o ddboot5.obj -l ddboot5.lst
+      13                                ;;; perl ../obj2bin-master/obj2bin.pl --raw --rt11 --outfile=ddboot5.bin ddboot5.obj
+      14                                
+      15                                ;;; Register memory locations
+      16 177000                                 COMMAND = 177000
+      17 177000                                 STATUS  = 177000
+      18 177002                                 DATA    = 177002
+      19                                ;;; SD11 Commands
+      20 000000                                 CMDINIT = 000000
+      21 040000                                 CMDREAD = 040000
+      22                                ;;; Program start address
+      23 001000                                 PROGRAM = 001000
+      24 073000                                 BOOT    = 073000
+      25                                
+      26                                	.asect
+      27 073000                         .               =	BOOT
+      28                                
+      29 073000 012701  177000          BOOTSD:	mov	#COMMAND, r1
+      30 073004 012702  177002          	mov	#DATA, r2
+      31 073010 012711  000000                  mov     #CMDINIT, (r1)
+      32 073014 012711  040000                  mov     #CMDREAD, (r1)
+      33 073020 012703  001000                  mov     #PROGRAM, r3
+      34 073024 011223                  1$:     mov     (r2), (r3)+                                 ; Read byte
+      35 073026 005711                          tst     (r1)                                        ; error?
+      36 073030 001775                          beq     1$
+      37 073032 012701  001000                  mov     #PROGRAM, r1
+      38 073036 000111                          jmp     @r1
+      38                                

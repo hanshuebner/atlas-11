@@ -1,0 +1,37 @@
+;;; Bootstrap code for the sd11 device
+;;;
+;;; The sd11 device mounts the forth.bin file when it is initialized.
+;;; The bootstrap sends the INIT command and then reads blocks from the
+;;; file to memory starting at location 01000 until it encounters an
+;;; error, which indicates the end of the forth.bin file.  It then
+;;; jumps to location 1000 to start forth.
+;;;
+;;; This boot loader is based on the Redesign of the TU-58 bootstrap
+;;; Peter Schranz 07-June-2025
+
+;;; macro11 sd11boot.mac -o sd11boot.obj -l sd11boot.lst
+
+;;; Register memory locations
+        COMMAND = 177000
+        STATUS  = 177000
+        DATA    = 177002
+;;; SD11 Commands
+        CMDINIT = 000000
+        CMDREAD = 040000
+;;; Program start address
+        PROGRAM = 001000
+        BOOT    = 073000
+
+	.asect
+.               =	BOOT
+
+BOOTSD:	mov	#COMMAND, r1
+	mov	#DATA, r2
+        mov     #CMDINIT, (r1)
+        mov     #CMDREAD, (r1)
+        mov     #PROGRAM, r3
+1$:     mov     (r2), (r3)+                                 ; Read byte
+        tst     (r1)                                        ; error?
+        beq     1$
+        mov     #PROGRAM, r1
+        jmp     @r1

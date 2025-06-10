@@ -62,6 +62,7 @@ private:
     uint16_t _res{};
 
     void init() {
+        printf("sd11::init\n");
         _buffer.reset();
         _current_file = "forth.bin";
         _current_block = 0;
