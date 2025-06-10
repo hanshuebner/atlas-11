@@ -101,8 +101,8 @@ void dcj11_device_init() {
     dl11s[3] = new DL11(0176520);
     dl11s[4] = new DL11(0176530);
 
+    sdcard = new sd11(0177000);
     dd5boot = new boot_rom(0173000, dd5boot_words);
-    sdcard = new sd11(0177600);
 }
 
 void cdc_task() {

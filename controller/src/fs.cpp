@@ -24,7 +24,7 @@ pico_fatfs_spi_config_t fatfs_config = {
 };
 
 // Helper function to convert FRESULT to error string
-static const char *f_result_to_str(FRESULT res) {
+const char *f_result_to_str(uint16_t res) {
     switch (res) {
         case FR_OK: return "Succeeded";
         case FR_DISK_ERR: return "A hard error occurred in the low level disk I/O layer";
@@ -46,6 +46,8 @@ static const char *f_result_to_str(FRESULT res) {
         case FR_NOT_ENOUGH_CORE: return "LFN working buffer could not be allocated";
         case FR_TOO_MANY_OPEN_FILES: return "Number of open files > FF_FS_LOCK";
         case FR_INVALID_PARAMETER: return "Given parameter is invalid";
+        case FR_EXT_BLOCK_READ_FAILED: return "Block read failed";
+        case FR_EXT_BLOCK_WRITE_FAILED: return "Block write failed";
         default: return "Unknown error";
     }
 }
@@ -82,51 +84,8 @@ static string format_attr(uint8_t attr) {
     return result.str();
 }
 
-static void init_sdcard() {
+void init_sdcard() {
     pico_fatfs_set_config(&fatfs_config);
-}
-
-// RAII wrapper for SD card mounting
-class ScopedSDCardMount {
-    FATFS &fs;
-    bool mounted;
-
-public:
-    explicit ScopedSDCardMount(FATFS &fs) : fs(fs), mounted(false) {
-        init_sdcard();
-        FRESULT res = f_mount(&fs, "", 1);
-        if (res != FR_OK) {
-            cout << "Failed to mount SD card: " << f_result_to_str(res) << endl;
-            return;
-        }
-        mounted = true;
-    }
-
-    ~ScopedSDCardMount() {
-        if (mounted) {
-            f_mount(nullptr, "", 0);
-        }
-    }
-
-    [[nodiscard]] bool is_mounted() const { return mounted; }
-};
-
-// Generic function to safely mount SD card, execute action, and unmount
-template<typename F, typename T>
-T with_sdcard_mounted(F action, T default_value) {
-    FATFS fs;
-    ScopedSDCardMount mount(fs);
-
-    if (!mount.is_mounted()) {
-        return default_value;
-    }
-
-    if constexpr (std::is_void_v<T>) {
-        action();
-        return;
-    } else {
-        return action();
-    }
 }
 
 // Register the ls command
@@ -134,45 +93,35 @@ static Command ls_cmd = {
     "ls",
     "List files on SD card",
     [](ostream &out, const vector<string> &args) {
-        FATFS fs;
+        with_sdcard_mounted([&out, args]() {
 
-        init_sdcard();
+            // Open the root directory
+            DIR dir;
+            FRESULT res = f_opendir(&dir, "");
+            if (res != FR_OK) {
+                out << "Failed to open directory: " << f_result_to_str(res) << endl;
+                f_mount(nullptr, "", 0);
+                return;
+            }
 
-        // Try to mount the filesystem
-        FRESULT res = f_mount(&fs, "", 1);
-        if (res != FR_OK) {
-            out << "Failed to mount SD card: " << f_result_to_str(res) << endl;
-            return;
-        }
+            // Read and print directory entries
+            while (true) {
+                FILINFO fno;
+                res = f_readdir(&dir, &fno);
+                if (res != FR_OK || fno.fname[0] == 0) break;
 
-        DIR dir;
-        FILINFO fno;
+                // Skip "." and ".." entries
+                if (fno.fname[0] == '.') continue;
 
-        // Open the root directory
-        res = f_opendir(&dir, "");
-        if (res != FR_OK) {
-            out << "Failed to open directory: " << f_result_to_str(res) << endl;
-            f_mount(nullptr, "", 0);
-            return;
-        }
+                // Print file info in ls -l format
+                out << format_attr(fno.fattrib) << " "
+                        << setw(10) << format_size(fno.fsize) << " "
+                        << fno.fname << endl;
+            }
 
-        // Read and print directory entries
-        while (true) {
-            res = f_readdir(&dir, &fno);
-            if (res != FR_OK || fno.fname[0] == 0) break;
-
-            // Skip "." and ".." entries
-            if (fno.fname[0] == '.') continue;
-
-            // Print file info in ls -l format
-            out << format_attr(fno.fattrib) << " "
-                    << setw(10) << format_size(fno.fsize) << " "
-                    << fno.fname << endl;
-        }
-
-        // Close directory and unmount
-        f_closedir(&dir);
-        f_mount(nullptr, "", 0);
+            // Close directory
+            f_closedir(&dir);
+        });
     }
 };
 

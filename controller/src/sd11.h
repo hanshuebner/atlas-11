@@ -21,9 +21,10 @@ public:
 
     void reset() {
         _pos = 0;
+        _at_end = false;
     }
 
-    bool at_end() {
+    [[nodiscard]] bool at_end() const {
         return _at_end;
     }
 
@@ -51,14 +52,14 @@ public:
 
 class sd11 : public Device {
 private:
-    typedef enum { COMMAND = 0, DATA = 1 } register_t;
+    typedef enum { COMMAND = 0, DATA = 2 } register_t;
     typedef enum { CMD_INIT = 0x0000, CMD_READ = 0x4000, CMD_WRITE = 0x8000, CMD_RESERVED = 0xc000 } command_t;
 
     command_t _current_command;
     buffer _buffer;
     string _current_file;
-    uint16_t _current_block;
-    FRESULT _res;
+    uint16_t _current_block{};
+    uint16_t _res{};
 
     void init() {
         _buffer.reset();
