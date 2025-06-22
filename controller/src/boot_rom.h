@@ -17,7 +17,10 @@ public:
     void write(uint16_t offset, uint16_t value) override {
         // Ignore writes
     };
-    uint16_t read(uint16_t offset) override { return _contents[offset >> 1]; };
+    uint16_t read(uint16_t offset) override {
+        printf("boot_rom::read: 0%06o => 0%06o\n", offset >> 1, _contents[offset >> 1]);
+        return _contents[offset >> 1];
+    };
 };
 
 #endif //BOOT_ROM_H

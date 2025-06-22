@@ -9,6 +9,7 @@
 #include "bus_interface.h"
 #include "fs.h"
 #include "terminal_session.h"
+#include "hardware/watchdog.h"
 
 using namespace std;
 
@@ -43,6 +44,13 @@ vector<Command> commands = {
             out << "Rebooting into firmware update mode..." << endl;
             sleep_ms(100); // Give time for message to be printed
             reset_usb_boot(0, 0); // Reboot into USB bootloader
+        }
+    },
+    {
+        "reset", "Reset the RP2350 Microcontroller",
+        [](ostream &out, const vector<string> &args) {
+            watchdog_enable(1, 1); // timeout = 1 us
+            while (1); // wait for watchdog to fire
         }
     },
     {

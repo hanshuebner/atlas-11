@@ -1,5 +1,7 @@
 #include "dl11.h"
 
+#include <cstdio>
+
 void DL11::write(uint16_t offset, uint16_t value) {
     switch (offset) {
         case DL11_RXCS:

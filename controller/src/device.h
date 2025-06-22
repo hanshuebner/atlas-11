@@ -1,6 +1,10 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 #include <cstdint>
+#include <cstdio>
+
+#include "dcj11_gpio.h"
+#include "hardware/gpio.h"
 
 #define IO_PAGE_SIZE 4096
 #define IO_OFFSET_MASK (IO_PAGE_SIZE - 1)
@@ -20,14 +24,18 @@ public:
     static inline void dispatch_write(uint16_t address, uint16_t value) {
         Device* handler = Device::_map[address & IO_OFFSET_MASK];
         if (handler != nullptr) {
+            printf("  mapped write 0%06o => 0%06o\n", address, value);
             handler->write(address & handler->_device_offset_mask, value);
+            return;
         }
+        printf("UNMAPPED write 0%06o => 0%06o\n", address, value);
     }
     static inline uint16_t dispatch_read(uint16_t address) {
         Device* handler = Device::_map[address & IO_OFFSET_MASK];
         if (handler != nullptr) {
             return handler->read(address & handler->_device_offset_mask);
         }
+        printf("UNMAPPED read  0%06o\n", address);
         return address; // for testing
         return 0;
     }

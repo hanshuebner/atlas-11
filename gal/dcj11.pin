@@ -12,7 +12,7 @@
    8   | BUFCTL   | Input
    9   | A0       | Input
   10   | GND      | GND
-  11   | NC       | Input
+  11   | STRB     | Input
   12   | OE       | Output
   13   | NC       | NC
   14   | NC       | NC

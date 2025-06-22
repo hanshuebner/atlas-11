@@ -7,7 +7,7 @@ DCJ11_SBC_Decoder
 
 ; PIN NAMES
 LAIO3  LAIO2  LAIO1  LAIO0  LBS0   LBS1   SCTL   BUFCTL A0     GND
-NC     OE     NC     NC     WEL    WEU    CE     IO     GPREAD VCC
+STRB   OE     NC     NC     WEL    WEU    CE     IO     GPREAD VCC
 ;
 
 /OE = LAIO3 * LAIO2 * /LAIO1 * /LAIO0 * /BUFCTL
@@ -15,9 +15,9 @@ NC     OE     NC     NC     WEL    WEU    CE     IO     GPREAD VCC
 
 /CE = /LBS1 * /LBS0
 
-/IO = LBS1 * /LBS0 * LAIO3 * LAIO2 * /LAIO1 * /LAIO0
-      + LBS1 * /LBS0 * LAIO3 * /LAIO2
-      + LBS1 * /LBS0 * /LAIO3 * /LAIO3
+/IO =   /STRB * LBS1 * /LBS0 *  LAIO3 *  LAIO2 * /LAIO1 * /LAIO0
+      + /STRB * LBS1 * /LBS0 *  LAIO3 * /LAIO2
+      + /STRB * LBS1 * /LBS0 * /LAIO3 * /LAIO2          *  LAIO0
 
 /WEL = /LAIO3 * /LAIO2 * /LAIO1 * BUFCTL * /SCTL
        + /LAIO3 * /LAIO2 * LAIO1 * /A0 * BUFCTL * /SCTL

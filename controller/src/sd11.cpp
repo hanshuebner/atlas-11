@@ -9,17 +9,17 @@ sd11::rw(bool write) {
 
         _buffer.reset();
 
-        printf("sd11::rw %s file %s block %d ", write ? "write" : "read", _current_file.c_str(), _current_block);
+        printf("sd11::rw: %s file %s block %d ", write ? "write" : "read", _current_file.c_str(), _current_block);
         FIL file;
         _res = f_open(&file, _current_file.c_str(), FA_READ);
         if (_res != FR_OK) {
-            printf("open: %s\n", f_result_to_str(_res));
+            printf("sd11::rw: open: %s\n", f_result_to_str(_res));
             return;
         }
 
         _res = f_lseek(&file, _current_block * 1024);
         if (_res != FR_OK) {
-            printf("lseek: %s\n", f_result_to_str(_res));
+            printf("sd11::rw: lseek: %s\n", f_result_to_str(_res));
             return;
         }
 
